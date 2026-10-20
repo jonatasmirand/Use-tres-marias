@@ -1,4 +1,3 @@
-
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
@@ -25,8 +24,8 @@ export async function createClient() {
                         cookieStore.set(name, value, options);
                     });
                 } catch {
-                    // Componentes que não permitem alterar cookies
-                    // não podem atualizar a sessão diretamente.
+                    // A atualização de cookies pode não estar disponível
+                    // em componentes que não permitem modificar a resposta.
                 }
             },
         },

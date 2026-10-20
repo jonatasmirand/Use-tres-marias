@@ -1,5 +1,5 @@
 import { supabase as publicSupabase } from "@/lib/supabase/client";
-import { createClient } from "../../lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import {
   CmsSection,
   HeroContent,
