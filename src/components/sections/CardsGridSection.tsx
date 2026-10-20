@@ -21,22 +21,22 @@ export default function CardsGridSection({ stableKey, content }: CardsGridSectio
     <section
       id={anchorId}
       aria-label={content.section_headline}
-      className="scroll-mt-24 border-b border-[#e6e7e4] bg-white py-16 md:py-24"
+      className="scroll-mt-24 border-b border-[#e6e7e4] bg-white py-[75px] px-6"
     >
-      <div className="mx-auto max-w-[1240px] px-5 md:px-6">
-        {/* Cabeçalho da Seção */}
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-12">
-          <div className="max-w-2xl">
+      <div className="mx-auto max-w-[1240px]">
+        {/* Cabeçalho da Seção Conforme Modelo CSS */}
+        <div className="mx-auto mb-[35px] flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="max-w-[500px]">
             {content.section_badge && (
-              <span className="mb-2.5 inline-block text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1f6b4f]">
+              <span className="mb-2 inline-block text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1f6b4f]">
                 {content.section_badge}
               </span>
             )}
-            <h2 className="font-serif text-2xl font-bold tracking-tight text-[#202522] sm:text-3xl md:text-4xl">
+            <h2 className="font-serif text-[31px] md:text-[38px] font-normal tracking-normal text-[#202522]">
               {content.section_headline}
             </h2>
             {content.section_subheadline && (
-              <p className="mt-2.5 text-xs leading-relaxed text-[#5f6863] sm:text-sm">
+              <p className="mt-2 text-[13px] leading-[1.6] text-[#777d78] max-w-[400px]">
                 {content.section_subheadline}
               </p>
             )}
@@ -45,62 +45,63 @@ export default function CardsGridSection({ stableKey, content }: CardsGridSectio
           {content.view_all_text && (
             <Link
               href={content.view_all_url || `/#${anchorId}`}
-              className="group inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-semibold uppercase tracking-[0.08em] text-[#1f6b4f] transition hover:text-[#18563f]"
+              className="text-[12px] font-semibold uppercase tracking-[0.08em] text-[#1f6b4f] hover:text-[#164d3a] whitespace-nowrap transition"
             >
-              <span>{content.view_all_text}</span>
-              <span className="transition-transform group-hover:translate-x-1">→</span>
+              {content.view_all_text} →
             </Link>
           )}
         </div>
 
-        {/* Grade com os 3 Cards de Imagens e Conteúdo */}
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
+        {/* Grade com os 3 Cards de 350x350 px Conforme o Modelo */}
+        <div className="grid gap-[18px] sm:grid-cols-2 lg:grid-cols-3 justify-items-center">
           {visibleCards.map((card, index) => (
             <article
               key={card.id || `card-${index}`}
-              className="group flex flex-col overflow-hidden rounded-2xl border border-[#e6e7e4] bg-[#fafbf9] shadow-sm transition-all duration-300 hover:border-[#d2e5db] hover:bg-white hover:shadow-md"
+              style={{ width: "100%", maxWidth: "350px", height: "350px" }}
+              className="group relative overflow-hidden bg-[#18221e] text-white transition-all duration-300 w-full max-w-[350px] h-[350px]"
             >
-              {/* Contêiner da Imagem com Efeito de Zoom Suave */}
-              <div className="relative aspect-[3/4] w-full overflow-hidden bg-[#f0f2f0]">
-                <img
-                  src={card.image_url}
-                  alt={card.alt_text || card.title}
-                  className="size-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
-                  loading="lazy"
-                />
+              {/* Imagem de Fundo com Zoom Suave ao Passar o Mouse */}
+              <img
+                src={card.image_url}
+                alt={card.alt_text || card.title}
+                width={350}
+                height={350}
+                className="size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+                loading="lazy"
+              />
 
-                {/* Badge Opcional sobre a imagem */}
-                {card.badge && (
-                  <span className="absolute top-3 left-3 rounded-md bg-white/95 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#1f6b4f] shadow-sm backdrop-blur-xs">
-                    {card.badge}
-                  </span>
+              {/* Gradiente do Modelo (.category:after) */}
+              <div
+                className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent transition-opacity"
+                aria-hidden="true"
+              />
+
+              {/* Badge Superior */}
+              {card.badge && (
+                <span className="absolute top-[18px] left-[18px] z-10 bg-white/95 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#1f6b4f]">
+                  {card.badge}
+                </span>
+              )}
+
+              {/* Conteúdo do Card (.category-content) */}
+              <div className="absolute bottom-[24px] left-[24px] right-[24px] z-10 text-white">
+                <h3 className="font-serif text-[24px] md:text-[26px] font-normal leading-tight text-white mb-2">
+                  {card.title}
+                </h3>
+
+                {card.description && (
+                  <p className="text-[12px] leading-relaxed text-[#f2f4f1]/85 line-clamp-2 mb-3">
+                    {card.description}
+                  </p>
                 )}
-              </div>
 
-              {/* Informações da Peça */}
-              <div className="flex flex-1 flex-col justify-between p-5">
-                <div>
-                  <h3 className="font-serif text-base font-bold text-[#202522] transition group-hover:text-[#1f6b4f]">
-                    {card.title}
-                  </h3>
-                  {card.description && (
-                    <p className="mt-1.5 text-xs leading-relaxed text-[#5f6863]">
-                      {card.description}
-                    </p>
-                  )}
-                </div>
-
-                {/* Botão de Ação */}
-                {card.button_text && (
-                  <div className="mt-5 pt-4 border-t border-[#f0f2f0]">
-                    <Link
-                      href={card.button_url || `/#${anchorId}`}
-                      className="inline-flex w-full items-center justify-center rounded-xl bg-[#eaf3ee] py-2.5 text-xs font-semibold text-[#1f6b4f] transition-all hover:bg-[#1f6b4f] hover:text-white"
-                    >
-                      {card.button_text}
-                    </Link>
-                  </div>
-                )}
+                <Link
+                  href={card.button_url || `/#${anchorId}`}
+                  className="inline-flex items-center gap-1.5 text-[12px] uppercase tracking-[0.08em] font-semibold text-white hover:underline"
+                >
+                  <span>{card.button_text || "Descobrir coleção"}</span>
+                  <span className="transition-transform group-hover:translate-x-1">→</span>
+                </Link>
               </div>
             </article>
           ))}

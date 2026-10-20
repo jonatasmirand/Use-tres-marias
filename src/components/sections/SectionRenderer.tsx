@@ -1,5 +1,6 @@
 import { CmsSection, HeroContent, CardsGridContent } from "@/types/cms";
 import HeroSection from "./HeroSection";
+import BenefitsBar from "./BenefitsBar";
 import CardsGridSection from "./CardsGridSection";
 
 interface SectionRendererProps {
@@ -22,10 +23,12 @@ export default function SectionRenderer({ sections }: SectionRendererProps) {
         switch (section.section_type) {
           case "hero":
             return (
-              <HeroSection
-                key={section.id}
-                content={section.published_content as HeroContent}
-              />
+              <div key={section.id}>
+                <HeroSection
+                  content={section.published_content as HeroContent}
+                />
+                <BenefitsBar />
+              </div>
             );
           case "novidades":
           case "vestidos":

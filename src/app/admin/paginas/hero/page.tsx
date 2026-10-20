@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { getSectionById, FALLBACK_HERO_SECTION } from "@/services/cms-service";
 import HeroEditor from "@/components/admin/editors/HeroEditor";
 import { HeroContent, CmsSection } from "@/types/cms";
@@ -11,6 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminHeroPage() {
+  await connection();
   const section = await getSectionById("home-hero");
   const heroSection = (section || FALLBACK_HERO_SECTION) as CmsSection<HeroContent>;
 

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { getSectionById } from "@/services/cms-service";
 import HeroEditor from "@/components/admin/editors/HeroEditor";
@@ -21,6 +22,7 @@ export async function generateMetadata({ params }: RouteContext): Promise<Metada
 }
 
 export default async function AdminSectionEditPage({ params }: RouteContext) {
+  await connection();
   const { secaoId } = await params;
   const section = await getSectionById(secaoId);
 

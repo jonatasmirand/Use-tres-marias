@@ -31,7 +31,7 @@ BEGIN
                 "cards": [
                     {
                         "id": "novidades-card-1",
-                        "image_url": "https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&w=800&q=80",
+                        "image_url": "https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&w=700&h=700&q=80",
                         "alt_text": "Argolas Banhadas a Ouro 18k",
                         "title": "Argolas Banhadas 18k",
                         "description": "Design minimalista e atemporal com banho nobre de alta durabilidade.",
@@ -43,7 +43,7 @@ BEGIN
                     },
                     {
                         "id": "novidades-card-2",
-                        "image_url": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=800&q=80",
+                        "image_url": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=700&h=700&q=80",
                         "alt_text": "Colar Ponto de Luz Zircônia",
                         "title": "Colar Ponto de Luz",
                         "description": "Gargantilha delicada com zircônia cristal lapidada e fecho joalheiro.",
@@ -55,7 +55,7 @@ BEGIN
                     },
                     {
                         "id": "novidades-card-3",
-                        "image_url": "https://images.unsplash.com/photo-1611591475816-16e6f5c889a7?auto=format&fit=crop&w=800&q=80",
+                        "image_url": "https://images.unsplash.com/photo-1611591475816-16e6f5c889a7?auto=format&fit=crop&w=700&h=700&q=80",
                         "alt_text": "Pulseira Riviera Cravejada",
                         "title": "Pulseira Riviera",
                         "description": "Cravejada com pedras premium de brilho intenso para ocasiões marcantes.",
@@ -76,7 +76,7 @@ BEGIN
                 "cards": [
                     {
                         "id": "novidades-card-1",
-                        "image_url": "https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&w=800&q=80",
+                        "image_url": "https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&w=700&h=700&q=80",
                         "alt_text": "Argolas Banhadas a Ouro 18k",
                         "title": "Argolas Banhadas 18k",
                         "description": "Design minimalista e atemporal com banho nobre de alta durabilidade.",
@@ -88,7 +88,7 @@ BEGIN
                     },
                     {
                         "id": "novidades-card-2",
-                        "image_url": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=800&q=80",
+                        "image_url": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=700&h=700&q=80",
                         "alt_text": "Colar Ponto de Luz Zircônia",
                         "title": "Colar Ponto de Luz",
                         "description": "Gargantilha delicada com zircônia cristal lapidada e fecho joalheiro.",
@@ -100,7 +100,7 @@ BEGIN
                     },
                     {
                         "id": "novidades-card-3",
-                        "image_url": "https://images.unsplash.com/photo-1611591475816-16e6f5c889a7?auto=format&fit=crop&w=800&q=80",
+                        "image_url": "https://images.unsplash.com/photo-1611591475816-16e6f5c889a7?auto=format&fit=crop&w=700&h=700&q=80",
                         "alt_text": "Pulseira Riviera Cravejada",
                         "title": "Pulseira Riviera",
                         "description": "Cravejada com pedras premium de brilho intenso para ocasiões marcantes.",
@@ -137,7 +137,7 @@ BEGIN
                 "cards": [
                     {
                         "id": "vestidos-card-1",
-                        "image_url": "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80",
+                        "image_url": "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=700&h=700&q=80",
                         "alt_text": "Vestido Longo Seda Esmeralda",
                         "title": "Vestido Longo Esmeralda",
                         "description": "Fluidez incomparável com decote elegante e fenda sutil refinada.",
@@ -149,7 +149,7 @@ BEGIN
                     },
                     {
                         "id": "vestidos-card-2",
-                        "image_url": "https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?auto=format&fit=crop&w=800&q=80",
+                        "image_url": "https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?auto=format&fit=crop&w=700&h=700&q=80",
                         "alt_text": "Vestido Midi Linho Cru",
                         "title": "Vestido Midi em Linho",
                         "description": "Frescor e elegância natural em fibra pura com abotoamento frontal.",
@@ -161,7 +161,7 @@ BEGIN
                     },
                     {
                         "id": "vestidos-card-3",
-                        "image_url": "https://images.unsplash.com/photo-1568252542512-9fe8fe9c87bb?auto=format&fit=crop&w=800&q=80",
+                        "image_url": "https://images.unsplash.com/photo-1568252542512-9fe8fe9c87bb?auto=format&fit=crop&w=700&h=700&q=80",
                         "alt_text": "Vestido Cetim Champagne",
                         "title": "Vestido Cetim Champagne",
                         "description": "Toque acetinado suave com alças delicadas para eventos noturnos.",
@@ -182,7 +182,7 @@ BEGIN
                 "cards": [
                     {
                         "id": "vestidos-card-1",
-                        "image_url": "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80",
+                        "image_url": "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=700&h=700&q=80",
                         "alt_text": "Vestido Longo Seda Esmeralda",
                         "title": "Vestido Longo Esmeralda",
                         "description": "Fluidez incomparável com decote elegante e fenda sutil refinada.",
@@ -194,7 +194,7 @@ BEGIN
                     },
                     {
                         "id": "vestidos-card-2",
-                        "image_url": "https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?auto=format&fit=crop&w=800&q=80",
+                        "image_url": "https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?auto=format&fit=crop&w=700&h=700&q=80",
                         "alt_text": "Vestido Midi Linho Cru",
                         "title": "Vestido Midi em Linho",
                         "description": "Frescor e elegância natural em fibra pura com abotoamento frontal.",
@@ -206,7 +206,7 @@ BEGIN
                     },
                     {
                         "id": "vestidos-card-3",
-                        "image_url": "https://images.unsplash.com/photo-1568252542512-9fe8fe9c87bb?auto=format&fit=crop&w=800&q=80",
+                        "image_url": "https://images.unsplash.com/photo-1568252542512-9fe8fe9c87bb?auto=format&fit=crop&w=700&h=700&q=80",
                         "alt_text": "Vestido Cetim Champagne",
                         "title": "Vestido Cetim Champagne",
                         "description": "Toque acetinado suave com alças delicadas para eventos noturnos.",
@@ -243,7 +243,7 @@ BEGIN
                 "cards": [
                     {
                         "id": "blusas-card-1",
-                        "image_url": "https://images.unsplash.com/photo-1551163943-3f6a855d1153?auto=format&fit=crop&w=800&q=80",
+                        "image_url": "https://images.unsplash.com/photo-1551163943-3f6a855d1153?auto=format&fit=crop&w=700&h=700&q=80",
                         "alt_text": "Camisa de Linho Alvo",
                         "title": "Camisa Linho Alvo",
                         "description": "Corte clássico estruturado com toque macio e acabamento premium.",
@@ -255,7 +255,7 @@ BEGIN
                     },
                     {
                         "id": "blusas-card-2",
-                        "image_url": "https://images.unsplash.com/photo-1589310243389-96a5483213a8?auto=format&fit=crop&w=800&q=80",
+                        "image_url": "https://images.unsplash.com/photo-1589310243389-96a5483213a8?auto=format&fit=crop&w=700&h=700&q=80",
                         "alt_text": "Regata de Seda Dourada",
                         "title": "Regata Seda Dourada",
                         "description": "Alças finas e caimento leve que valorizam acessórios e semijoias.",
@@ -267,7 +267,7 @@ BEGIN
                     },
                     {
                         "id": "blusas-card-3",
-                        "image_url": "https://images.unsplash.com/photo-1518049362265-d5b2a6467637?auto=format&fit=crop&w=800&q=80",
+                        "image_url": "https://images.unsplash.com/photo-1518049362265-d5b2a6467637?auto=format&fit=crop&w=700&h=700&q=80",
                         "alt_text": "Blusa Alfaiataria Manga Bufante",
                         "title": "Blusa Alfaiataria Bufante",
                         "description": "Detalhe volumétrico sutil nas mangas para um visual marcante.",
@@ -288,7 +288,7 @@ BEGIN
                 "cards": [
                     {
                         "id": "blusas-card-1",
-                        "image_url": "https://images.unsplash.com/photo-1551163943-3f6a855d1153?auto=format&fit=crop&w=800&q=80",
+                        "image_url": "https://images.unsplash.com/photo-1551163943-3f6a855d1153?auto=format&fit=crop&w=700&h=700&q=80",
                         "alt_text": "Camisa de Linho Alvo",
                         "title": "Camisa Linho Alvo",
                         "description": "Corte clássico estruturado com toque macio e acabamento premium.",
@@ -300,7 +300,7 @@ BEGIN
                     },
                     {
                         "id": "blusas-card-2",
-                        "image_url": "https://images.unsplash.com/photo-1589310243389-96a5483213a8?auto=format&fit=crop&w=800&q=80",
+                        "image_url": "https://images.unsplash.com/photo-1589310243389-96a5483213a8?auto=format&fit=crop&w=700&h=700&q=80",
                         "alt_text": "Regata de Seda Dourada",
                         "title": "Regata Seda Dourada",
                         "description": "Alças finas e caimento leve que valorizam acessórios e semijoias.",
@@ -312,7 +312,7 @@ BEGIN
                     },
                     {
                         "id": "blusas-card-3",
-                        "image_url": "https://images.unsplash.com/photo-1518049362265-d5b2a6467637?auto=format&fit=crop&w=800&q=80",
+                        "image_url": "https://images.unsplash.com/photo-1518049362265-d5b2a6467637?auto=format&fit=crop&w=700&h=700&q=80",
                         "alt_text": "Blusa Alfaiataria Manga Bufante",
                         "title": "Blusa Alfaiataria Bufante",
                         "description": "Detalhe volumétrico sutil nas mangas para um visual marcante.",
@@ -349,7 +349,7 @@ BEGIN
                 "cards": [
                     {
                         "id": "bermudas-card-1",
-                        "image_url": "https://images.unsplash.com/photo-1506630448388-4e683c67ddb0?auto=format&fit=crop&w=800&q=80",
+                        "image_url": "https://images.unsplash.com/photo-1506630448388-4e683c67ddb0?auto=format&fit=crop&w=700&h=700&q=80",
                         "alt_text": "Bermuda Alfaiataria Cós Alto",
                         "title": "Bermuda Cós Alto Alfaiataria",
                         "description": "Modelagem impecável com pregas discretas e passantes elegantes.",
@@ -361,7 +361,7 @@ BEGIN
                     },
                     {
                         "id": "bermudas-card-2",
-                        "image_url": "https://images.unsplash.com/photo-1582533561751-ef6f6ab93a2e?auto=format&fit=crop&w=800&q=80",
+                        "image_url": "https://images.unsplash.com/photo-1582533561751-ef6f6ab93a2e?auto=format&fit=crop&w=700&h=700&q=80",
                         "alt_text": "Bermuda Linho Cru com Faixa",
                         "title": "Bermuda Linho Natural",
                         "description": "Acompanha faixa de amarração no mesmo tom para cintura marcada.",
@@ -373,7 +373,7 @@ BEGIN
                     },
                     {
                         "id": "bermudas-card-3",
-                        "image_url": "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=800&q=80",
+                        "image_url": "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=700&h=700&q=80",
                         "alt_text": "Shorts Social Verde Oliva",
                         "title": "Shorts Social Oliva",
                         "description": "Bolsos funcionais com acabamento embutido e barra italiana dobrada.",
@@ -394,7 +394,7 @@ BEGIN
                 "cards": [
                     {
                         "id": "bermudas-card-1",
-                        "image_url": "https://images.unsplash.com/photo-1506630448388-4e683c67ddb0?auto=format&fit=crop&w=800&q=80",
+                        "image_url": "https://images.unsplash.com/photo-1506630448388-4e683c67ddb0?auto=format&fit=crop&w=700&h=700&q=80",
                         "alt_text": "Bermuda Alfaiataria Cós Alto",
                         "title": "Bermuda Cós Alto Alfaiataria",
                         "description": "Modelagem impecável com pregas discretas e passantes elegantes.",
@@ -406,7 +406,7 @@ BEGIN
                     },
                     {
                         "id": "bermudas-card-2",
-                        "image_url": "https://images.unsplash.com/photo-1582533561751-ef6f6ab93a2e?auto=format&fit=crop&w=800&q=80",
+                        "image_url": "https://images.unsplash.com/photo-1582533561751-ef6f6ab93a2e?auto=format&fit=crop&w=700&h=700&q=80",
                         "alt_text": "Bermuda Linho Cru com Faixa",
                         "title": "Bermuda Linho Natural",
                         "description": "Acompanha faixa de amarração no mesmo tom para cintura marcada.",
@@ -418,7 +418,7 @@ BEGIN
                     },
                     {
                         "id": "bermudas-card-3",
-                        "image_url": "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=800&q=80",
+                        "image_url": "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=700&h=700&q=80",
                         "alt_text": "Shorts Social Verde Oliva",
                         "title": "Shorts Social Oliva",
                         "description": "Bolsos funcionais com acabamento embutido e barra italiana dobrada.",
@@ -455,7 +455,7 @@ BEGIN
                 "cards": [
                     {
                         "id": "conjuntos-card-1",
-                        "image_url": "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80",
+                        "image_url": "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=700&h=700&q=80",
                         "alt_text": "Conjunto Alfaiataria Off-White",
                         "title": "Conjunto Blazer & Bermuda Off",
                         "description": "A sofisticação do monocromático com corte moderno e botões forrados.",
@@ -467,7 +467,7 @@ BEGIN
                     },
                     {
                         "id": "conjuntos-card-2",
-                        "image_url": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=800&q=80",
+                        "image_url": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=700&h=700&q=80",
                         "alt_text": "Conjunto Cropped e Saia Terracota",
                         "title": "Conjunto Terracota Elegance",
                         "description": "Cor vibrante e terrosa perfeita para o clima brasileiro em tecido estruturado.",
@@ -479,7 +479,7 @@ BEGIN
                     },
                     {
                         "id": "conjuntos-card-3",
-                        "image_url": "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=800&q=80",
+                        "image_url": "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=700&h=700&q=80",
                         "alt_text": "Conjunto Verde Sálvia Fresh",
                         "title": "Conjunto Sálvia em Linho",
                         "description": "Tons suaves com frescor absoluto para os dias ensolarados.",
@@ -500,7 +500,7 @@ BEGIN
                 "cards": [
                     {
                         "id": "conjuntos-card-1",
-                        "image_url": "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80",
+                        "image_url": "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=700&h=700&q=80",
                         "alt_text": "Conjunto Alfaiataria Off-White",
                         "title": "Conjunto Blazer & Bermuda Off",
                         "description": "A sofisticação do monocromático com corte moderno e botões forrados.",
@@ -512,7 +512,7 @@ BEGIN
                     },
                     {
                         "id": "conjuntos-card-2",
-                        "image_url": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=800&q=80",
+                        "image_url": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=700&h=700&q=80",
                         "alt_text": "Conjunto Cropped e Saia Terracota",
                         "title": "Conjunto Terracota Elegance",
                         "description": "Cor vibrante e terrosa perfeita para o clima brasileiro em tecido estruturado.",
@@ -524,7 +524,7 @@ BEGIN
                     },
                     {
                         "id": "conjuntos-card-3",
-                        "image_url": "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=800&q=80",
+                        "image_url": "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=700&h=700&q=80",
                         "alt_text": "Conjunto Verde Sálvia Fresh",
                         "title": "Conjunto Sálvia em Linho",
                         "description": "Tons suaves com frescor absoluto para os dias ensolarados.",

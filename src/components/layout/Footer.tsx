@@ -1,61 +1,77 @@
 import Link from "next/link";
 
-const navigationLinks = [
-  { label: "Novidades", href: "/#novidades" },
-  { label: "Vestidos", href: "/#vestidos" },
-  { label: "Blusas", href: "/#blusas" },
-  { label: "Bermudas", href: "/#bermudas" },
-  { label: "Conjuntos", href: "/#conjuntos" },
-];
-
 export default function Footer() {
   return (
-    <footer className="bg-[#18221e] px-6 pt-12 pb-6 text-[#dce3df] sm:pt-14">
-      <div className="mx-auto grid max-w-[1240px] gap-9 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr] lg:gap-[45px]">
+    <footer className="bg-[#18221e] text-[#dce3df] px-6 pt-[55px] pb-[25px]">
+      <div className="mx-auto max-w-[1240px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr] gap-[45px]">
+        {/* Coluna 1: Marca & Missão */}
         <div>
-          <Link
-            aria-label="Use Três Marias - página inicial"
-            className="inline-block font-serif text-[27px] text-white focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#a9cbbb]"
-            href="/"
-          >
+          <h3 className="font-serif text-[27px] font-normal text-white mb-[14px]">
             useTrêsMarias
-          </Link>
-          <p className="mt-3 max-w-sm text-xs leading-[1.8] text-[#aeb9b3]">
-            E-commerce Use Três Marias.
+          </h3>
+          <p className="text-[12px] leading-[1.8] text-[#aeb9b3] max-w-sm">
+            Moda feminina para mulheres que gostam de se vestir de si mesmas. Peças pensadas para acompanhar todos os seus momentos.
           </p>
         </div>
 
-        <nav aria-label="Navegação do rodapé">
-          <h2 className="mb-4 text-[11px] font-semibold uppercase tracking-[0.1em] text-white">
-            Navegue
-          </h2>
-          <ul className="space-y-1">
-            {navigationLinks.map((link) => (
-              <li key={link.label}>
-                <Link
-                  className="text-xs leading-[1.8] text-[#aeb9b3] transition hover:text-white focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a9cbbb]"
-                  href={link.href}
-                >
-                  {link.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-
+        {/* Coluna 2: Atendimento */}
         <div>
-          <h2 className="mb-4 text-[11px] font-semibold uppercase tracking-[0.1em] text-white">
-            Use Três Marias
-          </h2>
-          <p className="text-xs leading-[1.8] text-[#aeb9b3]">
-            Informações de atendimento e canais oficiais serão adicionados
-            futuramente.
-          </p>
+          <h4 className="text-[11px] font-semibold uppercase tracking-[0.1em] text-white mb-[14px]">
+            Atendimento
+          </h4>
+          <div className="space-y-1">
+            <Link href="/#atendimento" className="block text-[12px] leading-[1.8] text-[#aeb9b3] hover:text-white transition">
+              Fale conosco
+            </Link>
+            <Link href="/#trocas" className="block text-[12px] leading-[1.8] text-[#aeb9b3] hover:text-white transition">
+              Trocas e devoluções
+            </Link>
+            <Link href="/#envios" className="block text-[12px] leading-[1.8] text-[#aeb9b3] hover:text-white transition">
+              Envio e entrega
+            </Link>
+          </div>
+        </div>
+
+        {/* Coluna 3: Institucional */}
+        <div>
+          <h4 className="text-[11px] font-semibold uppercase tracking-[0.1em] text-white mb-[14px]">
+            Institucional
+          </h4>
+          <div className="space-y-1">
+            <Link href="/#sobre" className="block text-[12px] leading-[1.8] text-[#aeb9b3] hover:text-white transition">
+              Sobre nós
+            </Link>
+            <Link href="/#privacidade" className="block text-[12px] leading-[1.8] text-[#aeb9b3] hover:text-white transition">
+              Privacidade
+            </Link>
+            <Link href="/#termos" className="block text-[12px] leading-[1.8] text-[#aeb9b3] hover:text-white transition">
+              Termos de uso
+            </Link>
+          </div>
+        </div>
+
+        {/* Coluna 4: Redes Sociais */}
+        <div>
+          <h4 className="text-[11px] font-semibold uppercase tracking-[0.1em] text-white mb-[14px]">
+            Redes sociais
+          </h4>
+          <div className="space-y-1">
+            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="block text-[12px] leading-[1.8] text-[#aeb9b3] hover:text-white transition">
+              Instagram
+            </a>
+            <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer" className="block text-[12px] leading-[1.8] text-[#aeb9b3] hover:text-white transition">
+              TikTok
+            </a>
+            <a href="https://pinterest.com" target="_blank" rel="noopener noreferrer" className="block text-[12px] leading-[1.8] text-[#aeb9b3] hover:text-white transition">
+              Pinterest
+            </a>
+          </div>
         </div>
       </div>
 
-      <div className="mx-auto mt-10 max-w-[1240px] border-t border-[#33403a] pt-5 text-[11px] text-[#7f8d85]">
-        © Use Três Marias. Todos os direitos reservados.
+      {/* Copyright */}
+      <div className="mx-auto max-w-[1240px] mt-[45px] pt-5 border-t border-[#33403a] text-[11px] text-[#7f8d85]">
+        © 2026 useTrêsMarias. Todos os direitos reservados.
       </div>
     </footer>
   );

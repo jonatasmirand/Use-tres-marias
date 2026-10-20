@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import Link from "next/link";
 import { getAdminPageSections } from "@/services/cms-service";
 
@@ -10,6 +11,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminDashboardPage() {
+  await connection();
   const { sections } = await getAdminPageSections("home");
 
   return (
