@@ -54,7 +54,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </div>
 
           <Link
-            href="/admin/paginas/hero"
+            href="/admin/paginas/home-hero"
             className="flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold text-[#5f6863] transition hover:bg-[#eaf3ee] hover:text-[#1f6b4f]"
           >
             <span className="size-1.5 rounded-full bg-[#1f6b4f]" />
@@ -154,7 +154,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
           <div className="flex items-center gap-3">
             <Link
-              href="/admin/paginas/hero"
+              href="/admin/paginas/home-hero"
               className="rounded-lg bg-[#eaf3ee] px-2.5 py-1 text-xs font-semibold text-[#1f6b4f]"
             >
               Editor Hero

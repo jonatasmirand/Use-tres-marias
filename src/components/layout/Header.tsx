@@ -21,11 +21,6 @@ export default function Header() {
 
   return (
     <>
-      {/* Topbar com Frete Grátis e Condições de Pagamento */}
-      <div className="bg-[#1f6b4f] px-4 py-[9px] text-center text-[12px] uppercase tracking-[0.08em] text-white">
-        Frete grátis nas compras acima de R$ 299 • Parcele em até 6x sem juros
-      </div>
-
       {/* Header Principal */}
       <header className="sticky top-0 z-30 border-b border-[#e6e7e4] bg-white">
         <div className="mx-auto grid h-[82px] max-w-[1240px] grid-cols-[auto_1fr] items-center gap-5 px-6 md:grid-cols-[1fr_auto_1fr]">

@@ -27,7 +27,7 @@ export default async function AdminPaginasPage() {
         </div>
 
         <Link
-          href="/admin/paginas/hero"
+          href="/admin/paginas/home-hero"
           className="inline-flex items-center gap-2 rounded-xl bg-[#1f6b4f] px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#18563f]"
         >
           <svg className="size-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">

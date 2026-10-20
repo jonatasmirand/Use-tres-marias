@@ -27,7 +27,6 @@ export default function SectionRenderer({ sections }: SectionRendererProps) {
                 <HeroSection
                   content={section.published_content as HeroContent}
                 />
-                <BenefitsBar />
               </div>
             );
           case "novidades":
