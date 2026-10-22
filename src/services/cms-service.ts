@@ -3,255 +3,55 @@ import { createClient } from "@/lib/supabase/server";
 import {
   CmsSection,
   HeroContent,
-  CardsGridContent,
+  ShowcaseContent,
   ReorderSectionItem,
   UpdateDraftPayload,
 } from "@/types/cms";
 
+/* -------------------------------------------------------------------------- */
+/*  Conteúdo padrão (usado quando o banco ainda não tem a seção)              */
+/* -------------------------------------------------------------------------- */
+
 export const DEFAULT_HERO_CONTENT: HeroContent = {
-  desktop_image_url: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=1920&q=80",
-  mobile_image_url: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=768&q=80",
-  alt_text: "Coleção exclusiva de semijoias finas Use Três Marias",
-  title: "Elegância atemporal para realçar a sua essência",
-  description: "Descubra semijoias exclusivas criadas com design contemporâneo e acabamento refinado de alta joalheria.",
-  button_text: "Explorar Novidades",
-  button_url: "/#novidades",
-  content_alignment: "left",
-  image_position: "background",
-  overlay_opacity: 30,
+  interval_seconds: 6,
+  slides: [
+    {
+      id: "slide-primavera",
+      image_url: "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=1800&q=85",
+      mobile_image_url: "",
+      alt_text: "Coleção Primavera • 2026 – useTrêsMarias",
+      image_fit: "cover",
+      eyebrow: "Coleção Primavera • 2026",
+      title: "Seu estilo.<br>Do seu jeito.",
+      description: "Peças femininas pensadas para acompanhar todos os momentos — com leveza, personalidade e aquele toque especial das Três Marias.",
+      button_text: "Conheça a coleção",
+      button_url: "/novidades",
+    },
+  ],
 };
 
-export const DEFAULT_NOVIDADES_CONTENT: CardsGridContent = {
-  section_badge: "Coleção Exclusiva",
-  section_headline: "Novidades da Semana",
+export const DEFAULT_NOVIDADES_CONTENT: ShowcaseContent = {
+  section_badge: "Acabou de chegar",
+  section_headline: "Novidades",
   section_subheadline: "Lançamentos selecionados para compor produções elegantes e contemporâneas.",
-  view_all_text: "Ver Todas as Novidades",
-  view_all_url: "/#novidades",
-  cards: [
-    {
-      id: "novidades-card-1",
-      image_url: "https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&w=700&h=700&q=80",
-      alt_text: "Argolas Banhadas a Ouro 18k",
-      title: "Argolas Banhadas 18k",
-      description: "Design minimalista e atemporal com banho nobre de alta durabilidade.",
-      button_text: "Ver Detalhes",
-      button_url: "/#novidades",
-      badge: "Lançamento",
-      is_visible: true,
-      position: 1,
-    },
-    {
-      id: "novidades-card-2",
-      image_url: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=700&h=700&q=80",
-      alt_text: "Colar Ponto de Luz Zircônia",
-      title: "Colar Ponto de Luz",
-      description: "Gargantilha delicada com zircônia cristal lapidada e fecho joalheiro.",
-      button_text: "Ver Detalhes",
-      button_url: "/#novidades",
-      badge: "Mais Vendido",
-      is_visible: true,
-      position: 2,
-    },
-    {
-      id: "novidades-card-3",
-      image_url: "https://images.unsplash.com/photo-1611591475816-16e6f5c889a7?auto=format&fit=crop&w=700&h=700&q=80",
-      alt_text: "Pulseira Riviera Cravejada",
-      title: "Pulseira Riviera",
-      description: "Cravejada com pedras premium de brilho intenso para ocasiões marcantes.",
-      button_text: "Ver Detalhes",
-      button_url: "/#novidades",
-      badge: "Exclusivo",
-      is_visible: true,
-      position: 3,
-    },
-  ],
+  view_all_text: "Ver todas as novidades",
+  view_all_url: "/novidades",
+  max_items: 8,
 };
 
-export const DEFAULT_VESTIDOS_CONTENT: CardsGridContent = {
-  section_badge: "Alta Costura & Fluidez",
-  section_headline: "Vestidos Elegantes",
-  section_subheadline: "Modelagens sofisticadas com caimento impecável e tecidos nobres para ocasiões inesquecíveis.",
-  view_all_text: "Explorar Vestidos",
-  view_all_url: "/#vestidos",
-  cards: [
-    {
-      id: "vestidos-card-1",
-      image_url: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=700&h=700&q=80",
-      alt_text: "Vestido Longo Seda Esmeralda",
-      title: "Vestido Longo Esmeralda",
-      description: "Fluidez incomparável com decote elegante e fenda sutil refinada.",
-      button_text: "Ver Peça",
-      button_url: "/#vestidos",
-      badge: "Destaque",
-      is_visible: true,
-      position: 1,
-    },
-    {
-      id: "vestidos-card-2",
-      image_url: "https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?auto=format&fit=crop&w=700&h=700&q=80",
-      alt_text: "Vestido Midi Linho Cru",
-      title: "Vestido Midi em Linho",
-      description: "Frescor e elegância natural em fibra pura com abotoamento frontal.",
-      button_text: "Ver Peça",
-      button_url: "/#vestidos",
-      badge: "Linha Natural",
-      is_visible: true,
-      position: 2,
-    },
-    {
-      id: "vestidos-card-3",
-      image_url: "https://images.unsplash.com/photo-1568252542512-9fe8fe9c87bb?auto=format&fit=crop&w=700&h=700&q=80",
-      alt_text: "Vestido Cetim Champagne",
-      title: "Vestido Cetim Champagne",
-      description: "Toque acetinado suave com alças delicadas para eventos noturnos.",
-      button_text: "Ver Peça",
-      button_url: "/#vestidos",
-      badge: "Noite",
-      is_visible: true,
-      position: 3,
-    },
-  ],
+export const DEFAULT_CONJUNTOS_CONTENT: ShowcaseContent = {
+  section_badge: "Harmonia total",
+  section_headline: "Conjuntos",
+  section_subheadline: "Combinações prontas e harmoniosas para você estar impecável com o mínimo de esforço.",
+  view_all_text: "Ver todos os conjuntos",
+  view_all_url: "/conjuntos",
+  max_items: 8,
 };
 
-export const DEFAULT_BLUSAS_CONTENT: CardsGridContent = {
-  section_badge: "Delicadeza & Versatilidade",
-  section_headline: "Blusas & Camisas",
-  section_subheadline: "Peças versáteis em tecidos leves que transitam com facilidade do dia de trabalho ao jantar especial.",
-  view_all_text: "Explorar Blusas",
-  view_all_url: "/#blusas",
-  cards: [
-    {
-      id: "blusas-card-1",
-      image_url: "https://images.unsplash.com/photo-1551163943-3f6a855d1153?auto=format&fit=crop&w=700&h=700&q=80",
-      alt_text: "Camisa de Linho Alvo",
-      title: "Camisa Linho Alvo",
-      description: "Corte clássico estruturado com toque macio e acabamento premium.",
-      button_text: "Ver Peça",
-      button_url: "/#blusas",
-      badge: "Essencial",
-      is_visible: true,
-      position: 1,
-    },
-    {
-      id: "blusas-card-2",
-      image_url: "https://images.unsplash.com/photo-1589310243389-96a5483213a8?auto=format&fit=crop&w=700&h=700&q=80",
-      alt_text: "Regata de Seda Dourada",
-      title: "Regata Seda Dourada",
-      description: "Alças finas e caimento leve que valorizam acessórios e semijoias.",
-      button_text: "Ver Peça",
-      button_url: "/#blusas",
-      badge: "Festa",
-      is_visible: true,
-      position: 2,
-    },
-    {
-      id: "blusas-card-3",
-      image_url: "https://images.unsplash.com/photo-1518049362265-d5b2a6467637?auto=format&fit=crop&w=700&h=700&q=80",
-      alt_text: "Blusa Alfaiataria Manga Bufante",
-      title: "Blusa Alfaiataria Bufante",
-      description: "Detalhe volumétrico sutil nas mangas para um visual marcante.",
-      button_text: "Ver Peça",
-      button_url: "/#blusas",
-      badge: "Tendência",
-      is_visible: true,
-      position: 3,
-    },
-  ],
-};
+const STATIC_TIMESTAMP = "2026-10-21T00:00:00.000Z";
 
-export const DEFAULT_BERMUDAS_CONTENT: CardsGridContent = {
-  section_badge: "Conforto Chic",
-  section_headline: "Bermudas & Shorts",
-  section_subheadline: "Cortes modernos e estruturados que proporcionam liberdade de movimento sem abrir mão da elegância.",
-  view_all_text: "Explorar Bermudas",
-  view_all_url: "/#bermudas",
-  cards: [
-    {
-      id: "bermudas-card-1",
-      image_url: "https://images.unsplash.com/photo-1506630448388-4e683c67ddb0?auto=format&fit=crop&w=700&h=700&q=80",
-      alt_text: "Bermuda Alfaiataria Cós Alto",
-      title: "Bermuda Cós Alto Alfaiataria",
-      description: "Modelagem impecável com pregas discretas e passantes elegantes.",
-      button_text: "Ver Peça",
-      button_url: "/#bermudas",
-      badge: "Clássico",
-      is_visible: true,
-      position: 1,
-    },
-    {
-      id: "bermudas-card-2",
-      image_url: "https://images.unsplash.com/photo-1582533561751-ef6f6ab93a2e?auto=format&fit=crop&w=700&h=700&q=80",
-      alt_text: "Bermuda Linho Cru com Faixa",
-      title: "Bermuda Linho Natural",
-      description: "Acompanha faixa de amarração no mesmo tom para cintura marcada.",
-      button_text: "Ver Peça",
-      button_url: "/#bermudas",
-      badge: "Casual Chic",
-      is_visible: true,
-      position: 2,
-    },
-    {
-      id: "bermudas-card-3",
-      image_url: "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=700&h=700&q=80",
-      alt_text: "Shorts Social Verde Oliva",
-      title: "Shorts Social Oliva",
-      description: "Bolsos funcionais com acabamento embutido e barra italiana dobrada.",
-      button_text: "Ver Peça",
-      button_url: "/#bermudas",
-      badge: "Novo",
-      is_visible: true,
-      position: 3,
-    },
-  ],
-};
-
-export const DEFAULT_CONJUNTOS_CONTENT: CardsGridContent = {
-  section_badge: "Harmonia Total",
-  section_headline: "Conjuntos Coordenados",
-  section_subheadline: "Combinações prontas e harmoniosas pensadas para você estar impecável com o mínimo de esforço.",
-  view_all_text: "Explorar Conjuntos",
-  view_all_url: "/#conjuntos",
-  cards: [
-    {
-      id: "conjuntos-card-1",
-      image_url: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=700&h=700&q=80",
-      alt_text: "Conjunto Alfaiataria Off-White",
-      title: "Conjunto Blazer & Bermuda Off",
-      description: "A sofisticação do monocromático com corte moderno e botões forrados.",
-      button_text: "Ver Conjunto",
-      button_url: "/#conjuntos",
-      badge: "Destaque",
-      is_visible: true,
-      position: 1,
-    },
-    {
-      id: "conjuntos-card-2",
-      image_url: "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=700&h=700&q=80",
-      alt_text: "Conjunto Cropped e Saia Terracota",
-      title: "Conjunto Terracota Elegance",
-      description: "Cor vibrante e terrosa perfeita para o clima brasileiro em tecido estruturado.",
-      button_text: "Ver Conjunto",
-      button_url: "/#conjuntos",
-      badge: "Coleção Outono",
-      is_visible: true,
-      position: 2,
-    },
-    {
-      id: "conjuntos-card-3",
-      image_url: "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=700&h=700&q=80",
-      alt_text: "Conjunto Verde Sálvia Fresh",
-      title: "Conjunto Sálvia em Linho",
-      description: "Tons suaves com frescor absoluto para os dias ensolarados.",
-      button_text: "Ver Conjunto",
-      button_url: "/#conjuntos",
-      badge: "Mais Vendido",
-      is_visible: true,
-      position: 3,
-    },
-  ],
-};
-
-const STATIC_TIMESTAMP = "2026-10-19T00:00:00.000Z";
+/** Únicas seções exibidas na página inicial (na ordem padrão). */
+export const HOME_SECTION_KEYS = ["home-hero", "home-novidades", "home-conjuntos"] as const;
 
 export const ALL_FALLBACK_SECTIONS: CmsSection[] = [
   {
@@ -259,7 +59,7 @@ export const ALL_FALLBACK_SECTIONS: CmsSection[] = [
     page_id: "00000000-0000-0000-0000-000000000000",
     stable_key: "home-hero",
     section_type: "hero",
-    internal_title: "Hero Principal - Vitrine de Destaque",
+    internal_title: "Hero – Carrossel institucional",
     position: 1,
     is_active: true,
     status: "published",
@@ -273,7 +73,7 @@ export const ALL_FALLBACK_SECTIONS: CmsSection[] = [
     page_id: "00000000-0000-0000-0000-000000000000",
     stable_key: "home-novidades",
     section_type: "novidades",
-    internal_title: "Seção Novidades - Três Peças",
+    internal_title: "Vitrine – Novidades",
     position: 2,
     is_active: true,
     status: "published",
@@ -283,54 +83,12 @@ export const ALL_FALLBACK_SECTIONS: CmsSection[] = [
     updated_at: STATIC_TIMESTAMP,
   },
   {
-    id: "00000000-0000-0000-0000-000000000003",
-    page_id: "00000000-0000-0000-0000-000000000000",
-    stable_key: "home-vestidos",
-    section_type: "vestidos",
-    internal_title: "Seção Vestidos - Três Peças",
-    position: 3,
-    is_active: true,
-    status: "published",
-    draft_content: DEFAULT_VESTIDOS_CONTENT,
-    published_content: DEFAULT_VESTIDOS_CONTENT,
-    published_at: STATIC_TIMESTAMP,
-    updated_at: STATIC_TIMESTAMP,
-  },
-  {
-    id: "00000000-0000-0000-0000-000000000004",
-    page_id: "00000000-0000-0000-0000-000000000000",
-    stable_key: "home-blusas",
-    section_type: "blusas",
-    internal_title: "Seção Blusas - Três Peças",
-    position: 4,
-    is_active: true,
-    status: "published",
-    draft_content: DEFAULT_BLUSAS_CONTENT,
-    published_content: DEFAULT_BLUSAS_CONTENT,
-    published_at: STATIC_TIMESTAMP,
-    updated_at: STATIC_TIMESTAMP,
-  },
-  {
-    id: "00000000-0000-0000-0000-000000000005",
-    page_id: "00000000-0000-0000-0000-000000000000",
-    stable_key: "home-bermudas",
-    section_type: "bermudas",
-    internal_title: "Seção Bermudas - Três Peças",
-    position: 5,
-    is_active: true,
-    status: "published",
-    draft_content: DEFAULT_BERMUDAS_CONTENT,
-    published_content: DEFAULT_BERMUDAS_CONTENT,
-    published_at: STATIC_TIMESTAMP,
-    updated_at: STATIC_TIMESTAMP,
-  },
-  {
     id: "00000000-0000-0000-0000-000000000006",
     page_id: "00000000-0000-0000-0000-000000000000",
     stable_key: "home-conjuntos",
     section_type: "conjuntos",
-    internal_title: "Seção Conjuntos - Três Peças",
-    position: 6,
+    internal_title: "Vitrine – Conjuntos",
+    position: 3,
     is_active: true,
     status: "published",
     draft_content: DEFAULT_CONJUNTOS_CONTENT,
@@ -342,6 +100,21 @@ export const ALL_FALLBACK_SECTIONS: CmsSection[] = [
 
 export const FALLBACK_HERO_SECTION = ALL_FALLBACK_SECTIONS[0];
 
+/** Mantém somente as seções da Home e completa com os padrões que faltarem. */
+function mergeHomeSections(fromDb: CmsSection[]): CmsSection[] {
+  const allowed = new Set<string>(HOME_SECTION_KEYS);
+  const filtered = fromDb.filter((s) => allowed.has(s.stable_key));
+  const keysInDb = new Set(filtered.map((s) => s.stable_key));
+
+  for (const fallback of ALL_FALLBACK_SECTIONS) {
+    if (!keysInDb.has(fallback.stable_key)) {
+      filtered.push(fallback);
+    }
+  }
+
+  return filtered.sort((a, b) => a.position - b.position);
+}
+
 function isUuid(str: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 }
@@ -351,15 +124,9 @@ function resolveStableKey(idOrKey: string): string {
     "default-hero-id": "home-hero",
     "00000000-0000-0000-0000-000000000001": "home-hero",
     "00000000-0000-0000-0000-000000000002": "home-novidades",
-    "00000000-0000-0000-0000-000000000003": "home-vestidos",
-    "00000000-0000-0000-0000-000000000004": "home-blusas",
-    "00000000-0000-0000-0000-000000000005": "home-bermudas",
     "00000000-0000-0000-0000-000000000006": "home-conjuntos",
     "hero": "home-hero",
     "novidades": "home-novidades",
-    "vestidos": "home-vestidos",
-    "blusas": "home-blusas",
-    "bermudas": "home-bermudas",
     "conjuntos": "home-conjuntos",
   };
   return map[idOrKey] || idOrKey;
@@ -392,21 +159,16 @@ export async function getPublicPageSections(slug: string = "home"): Promise<CmsS
       .not("published_content", "is", null)
       .order("position", { ascending: true });
 
-    if (sectionsError || !sections || sections.length === 0) {
+    const allowed = new Set<string>(HOME_SECTION_KEYS);
+    const homeSections = (sections || []).filter((s) => allowed.has(s.stable_key)) as CmsSection[];
+
+    if (sectionsError || homeSections.length === 0) {
       return ALL_FALLBACK_SECTIONS;
     }
 
-    // Mesclar com fallbacks se faltar alguma seção
-    const keysInDb = new Set(sections.map((s) => s.stable_key));
-    const merged = [...sections];
-
-    for (const fallback of ALL_FALLBACK_SECTIONS) {
-      if (!keysInDb.has(fallback.stable_key)) {
-        merged.push(fallback);
-      }
-    }
-
-    return merged.sort((a, b) => a.position - b.position) as CmsSection[];
+    // A leitura pública só enxerga seções ativas/publicadas: se uma seção não
+    // veio do banco é porque foi ocultada no painel, então não usamos fallback.
+    return homeSections.sort((a, b) => a.position - b.position);
   } catch {
     return ALL_FALLBACK_SECTIONS;
   }
@@ -445,16 +207,7 @@ export async function getAdminPageSections(slug: string = "home"): Promise<{ pag
       return { pageId, sections: ALL_FALLBACK_SECTIONS };
     }
 
-    const keysInDb = new Set(sections.map((s) => s.stable_key));
-    const merged = [...sections];
-
-    for (const fallback of ALL_FALLBACK_SECTIONS) {
-      if (!keysInDb.has(fallback.stable_key)) {
-        merged.push(fallback);
-      }
-    }
-
-    return { pageId, sections: merged.sort((a, b) => a.position - b.position) as CmsSection[] };
+    return { pageId, sections: mergeHomeSections(sections as CmsSection[]) };
   } catch {
     return { pageId: "", sections: ALL_FALLBACK_SECTIONS };
   }

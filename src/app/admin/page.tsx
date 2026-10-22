@@ -27,15 +27,24 @@ export default async function AdminDashboardPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            href="/admin/produtos"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#1f6b4f] px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#18563f]"
+          >
+            <svg className="size-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            </svg>
+            <span>Gerenciar Produtos</span>
+          </Link>
           <Link
             href="/admin/paginas/home-hero"
-            className="inline-flex items-center gap-2 rounded-xl bg-[#1f6b4f] px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#18563f]"
+            className="inline-flex items-center gap-2 rounded-xl border border-[#e6e7e4] bg-white px-4 py-2.5 text-xs font-semibold text-[#202522] shadow-sm transition hover:bg-[#fafbf9]"
           >
             <svg className="size-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
-            <span>Editar Seção Hero</span>
+            <span>Editar Carrossel Hero</span>
           </Link>
           <Link
             href="/"

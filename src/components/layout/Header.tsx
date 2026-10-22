@@ -4,11 +4,11 @@ import Link from "next/link";
 import { useState } from "react";
 
 const navigationLinks = [
-  { label: "Novidades", href: "/#novidades" },
-  { label: "Vestidos", href: "/#vestidos" },
-  { label: "Blusas", href: "/#blusas" },
-  { label: "Bermudas", href: "/#bermudas" },
-  { label: "Conjuntos", href: "/#conjuntos" },
+  { label: "Novidades", href: "/novidades" },
+  { label: "Vestidos", href: "/vestidos" },
+  { label: "Blusas", href: "/blusas" },
+  { label: "Bermudas", href: "/bermudas" },
+  { label: "Conjuntos", href: "/conjuntos" },
 ];
 
 export default function Header() {
@@ -71,15 +71,6 @@ export default function Header() {
             >
               ⌕
             </button>
-
-            <Link
-              href="/admin"
-              aria-label="Painel Administrativo"
-              title="Painel Administrativo"
-              className="text-[19px] text-[#202522] transition hover:text-[#1f6b4f]"
-            >
-              ♙
-            </Link>
 
             <button
               type="button"

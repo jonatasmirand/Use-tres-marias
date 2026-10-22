@@ -21,6 +21,10 @@ export async function GET(
       sku,
       description,
       price,
+      images,
+      sizes,
+      is_new,
+      position,
       stock_quantity,
       category_id,
       categories (

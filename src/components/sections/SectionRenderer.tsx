@@ -1,13 +1,20 @@
-import { CmsSection, HeroContent, CardsGridContent } from "@/types/cms";
-import HeroSection from "./HeroSection";
-import BenefitsBar from "./BenefitsBar";
-import CardsGridSection from "./CardsGridSection";
+import { CmsSection, HeroContent, ShowcaseContent } from "@/types/cms";
+import { Product } from "@/types/catalog";
+import HeroCarousel from "./HeroCarousel";
+import ShowcaseSection from "./ShowcaseSection";
+import { normalizeHeroContent, normalizeShowcaseContent } from "@/validations/cms-schemas";
 
 interface SectionRendererProps {
   sections: CmsSection[];
+  novidadesProducts?: Product[];
+  conjuntosProducts?: Product[];
 }
 
-export default function SectionRenderer({ sections }: SectionRendererProps) {
+export default function SectionRenderer({
+  sections,
+  novidadesProducts = [],
+  conjuntosProducts = [],
+}: SectionRendererProps) {
   // Filtra apenas seções ativas, publicadas e com conteúdo disponível
   const activeSections = sections
     .filter((s) => s.is_active && s.status === "published" && s.published_content)
@@ -21,27 +28,35 @@ export default function SectionRenderer({ sections }: SectionRendererProps) {
     <div className="flex flex-col">
       {activeSections.map((section) => {
         switch (section.section_type) {
-          case "hero":
+          case "hero": {
+            const heroContent = normalizeHeroContent(section.published_content);
+            return <HeroCarousel key={section.id} content={heroContent} />;
+          }
+
+          case "novidades": {
+            const content = normalizeShowcaseContent(section.published_content, "/novidades");
             return (
-              <div key={section.id}>
-                <HeroSection
-                  content={section.published_content as HeroContent}
-                />
-              </div>
-            );
-          case "novidades":
-          case "vestidos":
-          case "blusas":
-          case "bermudas":
-          case "conjuntos":
-          case "cards_grid":
-            return (
-              <CardsGridSection
+              <ShowcaseSection
                 key={section.id}
                 stableKey={section.stable_key}
-                content={section.published_content as CardsGridContent}
+                content={content}
+                products={novidadesProducts}
               />
             );
+          }
+
+          case "conjuntos": {
+            const content = normalizeShowcaseContent(section.published_content, "/conjuntos");
+            return (
+              <ShowcaseSection
+                key={section.id}
+                stableKey={section.stable_key}
+                content={content}
+                products={conjuntosProducts}
+              />
+            );
+          }
+
           default:
             return null;
         }

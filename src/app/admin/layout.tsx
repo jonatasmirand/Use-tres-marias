@@ -40,6 +40,16 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </Link>
 
           <Link
+            href="/admin/produtos"
+            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold text-[#202522] transition hover:bg-[#eaf3ee] hover:text-[#1f6b4f]"
+          >
+            <svg className="size-4 shrink-0 text-[#1f6b4f]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            </svg>
+            <span>Produtos (Catálogo)</span>
+          </Link>
+
+          <Link
             href="/admin/paginas"
             className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold text-[#202522] transition hover:bg-[#eaf3ee] hover:text-[#1f6b4f]"
           >
@@ -50,7 +60,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </Link>
 
           <div className="pt-2 pl-3 pb-1 text-[10px] font-bold uppercase tracking-[0.1em] text-[#7f8d85]">
-            Editores de Seções
+            Vitrines da Home
           </div>
 
           <Link
@@ -58,47 +68,23 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             className="flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold text-[#5f6863] transition hover:bg-[#eaf3ee] hover:text-[#1f6b4f]"
           >
             <span className="size-1.5 rounded-full bg-[#1f6b4f]" />
-            <span>Hero Destaque</span>
+            <span>Hero Carrossel</span>
           </Link>
 
           <Link
-            href="/admin/paginas/novidades"
+            href="/admin/paginas/home-novidades"
             className="flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold text-[#5f6863] transition hover:bg-[#eaf3ee] hover:text-[#1f6b4f]"
           >
             <span className="size-1.5 rounded-full bg-[#1f6b4f]" />
-            <span>Novidades (3 Peças)</span>
+            <span>Vitrine Novidades</span>
           </Link>
 
           <Link
-            href="/admin/paginas/vestidos"
+            href="/admin/paginas/home-conjuntos"
             className="flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold text-[#5f6863] transition hover:bg-[#eaf3ee] hover:text-[#1f6b4f]"
           >
             <span className="size-1.5 rounded-full bg-[#1f6b4f]" />
-            <span>Vestidos (3 Peças)</span>
-          </Link>
-
-          <Link
-            href="/admin/paginas/blusas"
-            className="flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold text-[#5f6863] transition hover:bg-[#eaf3ee] hover:text-[#1f6b4f]"
-          >
-            <span className="size-1.5 rounded-full bg-[#1f6b4f]" />
-            <span>Blusas (3 Peças)</span>
-          </Link>
-
-          <Link
-            href="/admin/paginas/bermudas"
-            className="flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold text-[#5f6863] transition hover:bg-[#eaf3ee] hover:text-[#1f6b4f]"
-          >
-            <span className="size-1.5 rounded-full bg-[#1f6b4f]" />
-            <span>Bermudas (3 Peças)</span>
-          </Link>
-
-          <Link
-            href="/admin/paginas/conjuntos"
-            className="flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold text-[#5f6863] transition hover:bg-[#eaf3ee] hover:text-[#1f6b4f]"
-          >
-            <span className="size-1.5 rounded-full bg-[#1f6b4f]" />
-            <span>Conjuntos (3 Peças)</span>
+            <span>Vitrine Conjuntos</span>
           </Link>
 
           <div className="pt-4 px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[#7f8d85]">

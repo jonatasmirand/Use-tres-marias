@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { CmsSection, HeroContent } from "@/types/cms";
+import { CmsSection, HeroContent, HeroSlide, HERO_INTERVAL_MIN, HERO_INTERVAL_MAX, HERO_MAX_SLIDES } from "@/types/cms";
+import { normalizeHeroContent } from "@/validations/cms-schemas";
+import HeroCarousel from "@/components/sections/HeroCarousel";
 
 interface HeroEditorProps {
   initialSection: CmsSection<HeroContent>;
@@ -9,34 +11,29 @@ interface HeroEditorProps {
 
 export default function HeroEditor({ initialSection }: HeroEditorProps) {
   const [section, setSection] = useState<CmsSection<HeroContent>>(initialSection);
-  const [content, setContent] = useState<HeroContent>({
-    desktop_image_url: initialSection.draft_content.desktop_image_url || "",
-    mobile_image_url: initialSection.draft_content.mobile_image_url || "",
-    alt_text: initialSection.draft_content.alt_text || "",
-    title: initialSection.draft_content.title || "",
-    description: initialSection.draft_content.description || "",
-    button_text: initialSection.draft_content.button_text || "Explorar Novidades",
-    button_url: initialSection.draft_content.button_url || "/#novidades",
-    content_alignment: initialSection.draft_content.content_alignment || "left",
-    image_position: initialSection.draft_content.image_position || "background",
-    overlay_opacity: typeof initialSection.draft_content.overlay_opacity === "number" ? initialSection.draft_content.overlay_opacity : 30,
-  });
+  const normalizedInitial = normalizeHeroContent(initialSection.draft_content);
 
+  const [intervalSeconds, setIntervalSeconds] = useState(normalizedInitial.interval_seconds || 5);
+  const [slides, setSlides] = useState<HeroSlide[]>(normalizedInitial.slides);
   const [internalTitle, setInternalTitle] = useState(initialSection.internal_title);
   const [isActive, setIsActive] = useState(initialSection.is_active);
 
   const [activeTab, setActiveTab] = useState<"editor" | "preview">("editor");
-  const [previewDevice, setPreviewDevice] = useState<"desktop" | "mobile">("desktop");
+  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
 
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-  const [isUploading, setIsUploading] = useState<"desktop" | "mobile" | null>(null);
-
+  const [isUploading, setIsUploading] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  // Manipulador de upload de imagem para Supabase Storage
-  async function handleFileUpload(file: File, target: "desktop" | "mobile") {
-    setIsUploading(target);
+  const currentContent: HeroContent = {
+    interval_seconds: intervalSeconds,
+    slides,
+  };
+
+  // Upload de imagem para um slide específico
+  async function handleFileUpload(file: File, slideIdx: number) {
+    setIsUploading(slideIdx);
     setFeedback(null);
 
     try {
@@ -56,18 +53,72 @@ export default function HeroEditor({ initialSection }: HeroEditorProps) {
 
       const uploadedUrl = json.data.url;
 
-      setContent((prev) => ({
-        ...prev,
-        [target === "desktop" ? "desktop_image_url" : "mobile_image_url"]: uploadedUrl,
-      }));
+      setSlides((prev) =>
+        prev.map((s, idx) => (idx === slideIdx ? { ...s, image_url: uploadedUrl } : s))
+      );
 
-      setFeedback({ type: "success", message: `Imagem de ${target} enviada com sucesso!` });
+      setFeedback({ type: "success", message: `Imagem do slide ${slideIdx + 1} enviada com sucesso!` });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Falha ao enviar imagem.";
       setFeedback({ type: "error", message: msg });
     } finally {
       setIsUploading(null);
     }
+  }
+
+  // Adicionar novo slide
+  function handleAddSlide() {
+    if (slides.length >= HERO_MAX_SLIDES) {
+      setFeedback({ type: "error", message: `Limite máximo de ${HERO_MAX_SLIDES} slides atingido.` });
+      return;
+    }
+
+    const newSlide: HeroSlide = {
+      id: `slide-${Date.now()}`,
+      image_url: "",
+      mobile_image_url: "",
+      alt_text: `Novo slide ${slides.length + 1}`,
+      image_fit: "cover",
+      eyebrow: "Coleção Primavera • 2026",
+      title: "",
+      description: "",
+      button_text: "Conheça a coleção",
+      button_url: "/novidades",
+    };
+
+    setSlides([...slides, newSlide]);
+    setActiveSlideIndex(slides.length);
+  }
+
+  // Remover slide
+  function handleRemoveSlide(idxToRemove: number) {
+    if (slides.length <= 1) {
+      setFeedback({ type: "error", message: "O carrossel precisa ter pelo menos um slide." });
+      return;
+    }
+
+    const next = slides.filter((_, idx) => idx !== idxToRemove);
+    setSlides(next);
+    if (activeSlideIndex >= next.length) {
+      setActiveSlideIndex(Math.max(0, next.length - 1));
+    }
+  }
+
+  // Mover slide na ordem
+  function handleMoveSlide(fromIdx: number, direction: "up" | "down") {
+    const toIdx = direction === "up" ? fromIdx - 1 : fromIdx + 1;
+    if (toIdx < 0 || toIdx >= slides.length) return;
+
+    const copy = [...slides];
+    const [moved] = copy.splice(fromIdx, 1);
+    copy.splice(toIdx, 0, moved);
+    setSlides(copy);
+    setActiveSlideIndex(toIdx);
+  }
+
+  // Atualizar campo de um slide
+  function updateSlide(idx: number, patch: Partial<HeroSlide>) {
+    setSlides((prev) => prev.map((s, i) => (i === idx ? { ...s, ...patch } : s)));
   }
 
   // Salvar Rascunho
@@ -82,7 +133,7 @@ export default function HeroEditor({ initialSection }: HeroEditorProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           internal_title: internalTitle,
-          draft_content: content,
+          draft_content: currentContent,
         }),
       });
 
@@ -97,7 +148,7 @@ export default function HeroEditor({ initialSection }: HeroEditorProps) {
         ...prev,
         ...(json.data || {}),
         internal_title: internalTitle,
-        draft_content: content,
+        draft_content: currentContent,
         status: "draft",
       }));
 
@@ -118,15 +169,21 @@ export default function HeroEditor({ initialSection }: HeroEditorProps) {
     try {
       const sectionKey = section.stable_key || section.id;
 
-      // Primeiro garante que o rascunho atual está salvo
-      await fetch(`/api/admin/sections/${sectionKey}`, {
+      // Salva rascunho antes de publicar
+      const saveRes = await fetch(`/api/admin/sections/${sectionKey}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           internal_title: internalTitle,
-          draft_content: content,
+          draft_content: currentContent,
         }),
       });
+
+      const saveJson = await saveRes.json();
+      if (!saveRes.ok || !saveJson.success) {
+        const errorMsg = saveJson.errors ? saveJson.errors.join(", ") : saveJson.error || "Erro ao salvar rascunho antes da publicação.";
+        throw new Error(errorMsg);
+      }
 
       const res = await fetch(`/api/admin/sections/${sectionKey}/publish`, {
         method: "POST",
@@ -141,14 +198,14 @@ export default function HeroEditor({ initialSection }: HeroEditorProps) {
       setSection((prev) => ({
         ...prev,
         ...(json.data || {}),
-        published_content: content,
+        published_content: currentContent,
         status: "published",
         published_at: new Date().toISOString(),
       }));
 
       setFeedback({
         type: "success",
-        message: "🎉 Seção Hero publicada com sucesso! As alterações já estão visíveis na loja pública.",
+        message: "🎉 Carrossel publicado com sucesso! As alterações já estão visíveis na loja pública.",
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Falha ao publicar na loja.";
@@ -171,19 +228,20 @@ export default function HeroEditor({ initialSection }: HeroEditorProps) {
         body: JSON.stringify({ is_active: nextState }),
       });
     } catch {
-      // Reverter se falhar
       setIsActive(!nextState);
     }
   }
 
+  const activeSlide = slides[activeSlideIndex] || slides[0];
+
   return (
     <div className="mx-auto max-w-[1240px] space-y-6">
-      {/* Barra de Ações e Estado Superior */}
+      {/* Barra de Ações Superior */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-[#e6e7e4] pb-4">
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="font-serif text-2xl font-bold tracking-tight text-[#202522]">
-              Editor da Seção Hero
+              Editor do Carrossel Hero
             </h1>
             <span
               className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider ${
@@ -192,15 +250,14 @@ export default function HeroEditor({ initialSection }: HeroEditorProps) {
                   : "bg-amber-50 text-amber-700"
               }`}
             >
-              {section.status === "published" ? "Publicada" : "Rascunho Pendente"}
+              {section.status === "published" ? "Publicado" : "Rascunho Pendente"}
             </span>
           </div>
           <p className="mt-1 text-xs text-[#5f6863]">
-            Configure o banner principal de destaque com imagens, títulos, chamadas e links.
+            Adicione slides com fotos institucionais (Quem Somos, Propósito, etc.), controle o tempo de rotação e personalize frases e botões.
           </p>
         </div>
 
-        {/* Botões de Ação */}
         <div className="flex flex-wrap items-center gap-2.5">
           <button
             onClick={handleToggleVisibility}
@@ -212,7 +269,7 @@ export default function HeroEditor({ initialSection }: HeroEditorProps) {
             type="button"
           >
             <span className={`size-2 rounded-full ${isActive ? "bg-[#1f6b4f]" : "bg-[#7f8d85]"}`} />
-            <span>{isActive ? "Seção Visível" : "Seção Oculta"}</span>
+            <span>{isActive ? "Carrossel Visível" : "Carrossel Oculto"}</span>
           </button>
 
           <button
@@ -249,7 +306,7 @@ export default function HeroEditor({ initialSection }: HeroEditorProps) {
         </div>
       )}
 
-      {/* Navegação entre Editor e Pré-visualização */}
+      {/* Abas: Editor vs Preview */}
       <div className="flex items-center justify-between border-b border-[#e6e7e4]">
         <div className="flex gap-2">
           <button
@@ -261,7 +318,7 @@ export default function HeroEditor({ initialSection }: HeroEditorProps) {
             }`}
             type="button"
           >
-            Configurações & Conteúdo
+            Gerenciar Slides & Tempo
           </button>
           <button
             onClick={() => setActiveTab("preview")}
@@ -272,331 +329,350 @@ export default function HeroEditor({ initialSection }: HeroEditorProps) {
             }`}
             type="button"
           >
-            Pré-visualização ao Vivo
+            Pré-visualização do Carrossel ({slides.length} {slides.length === 1 ? "slide" : "slides"})
           </button>
         </div>
-
-        {activeTab === "preview" && (
-          <div className="flex items-center gap-1.5 pb-2">
-            <button
-              onClick={() => setPreviewDevice("desktop")}
-              className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
-                previewDevice === "desktop"
-                  ? "bg-[#1f6b4f] text-white"
-                  : "bg-[#eaf3ee] text-[#1f6b4f]"
-              }`}
-              type="button"
-            >
-              Desktop
-            </button>
-            <button
-              onClick={() => setPreviewDevice("mobile")}
-              className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
-                previewDevice === "mobile"
-                  ? "bg-[#1f6b4f] text-white"
-                  : "bg-[#eaf3ee] text-[#1f6b4f]"
-              }`}
-              type="button"
-            >
-              Mobile
-            </button>
-          </div>
-        )}
       </div>
 
-      {/* Conteúdo da Aba Ativa */}
       {activeTab === "editor" ? (
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Coluna 1: Textos, Chamadas e Botão */}
-          <div className="space-y-5 rounded-2xl border border-[#e6e7e4] bg-white p-6 shadow-sm">
-            <h2 className="font-serif text-base font-bold text-[#202522]">
-              Conteúdo & Textos
+        <div className="space-y-6">
+          {/* Card de Configuração Geral: Tempo de Rolagem */}
+          <div className="rounded-2xl border border-[#e6e7e4] bg-white p-6 shadow-sm">
+            <h2 className="font-serif text-base font-bold text-[#202522] mb-1">
+              Configurações Gerais do Carrossel
             </h2>
+            <p className="text-xs text-[#777d78] mb-5">
+              Defina o tempo de exibição automática de cada foto e a identificação interna.
+            </p>
 
-            <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[#5f6863]">
-                Título Interno (Identificação no Painel)
-              </label>
-              <input
-                type="text"
-                value={internalTitle}
-                onChange={(e) => setInternalTitle(e.target.value)}
-                className="w-full rounded-xl border border-[#e6e7e4] bg-[#fafbf9] px-3.5 py-2 text-xs text-[#202522] focus:border-[#1f6b4f] focus:outline-none"
-                placeholder="Ex: Hero Principal - Lançamento Coleção"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[#5f6863]">
-                Título Principal da Hero *
-              </label>
-              <textarea
-                rows={2}
-                value={content.title}
-                onChange={(e) => setContent({ ...content, title: e.target.value })}
-                className="w-full rounded-xl border border-[#e6e7e4] bg-[#fafbf9] px-3.5 py-2 text-sm text-[#202522] focus:border-[#1f6b4f] focus:outline-none"
-                placeholder="Ex: Elegância atemporal para realçar a sua essência"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[#5f6863]">
-                Descrição / Texto Complementar
-              </label>
-              <textarea
-                rows={3}
-                value={content.description}
-                onChange={(e) => setContent({ ...content, description: e.target.value })}
-                className="w-full rounded-xl border border-[#e6e7e4] bg-[#fafbf9] px-3.5 py-2 text-xs text-[#202522] focus:border-[#1f6b4f] focus:outline-none"
-                placeholder="Ex: Descubra semijoias exclusivas criadas com design contemporâneo..."
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-6 sm:grid-cols-2">
               <div>
                 <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[#5f6863]">
-                  Texto do Botão (CTA)
+                  Identificação Interna
                 </label>
                 <input
                   type="text"
-                  value={content.button_text}
-                  onChange={(e) => setContent({ ...content, button_text: e.target.value })}
+                  value={internalTitle}
+                  onChange={(e) => setInternalTitle(e.target.value)}
                   className="w-full rounded-xl border border-[#e6e7e4] bg-[#fafbf9] px-3.5 py-2 text-xs text-[#202522] focus:border-[#1f6b4f] focus:outline-none"
-                  placeholder="Ex: Explorar Novidades"
+                  placeholder="Ex: Hero – Carrossel Institucional"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[#5f6863]">
-                  Link de Destino
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-[#5f6863]">
+                    Tempo de Rolagem Automática
+                  </label>
+                  <span className="text-xs font-bold text-[#1f6b4f] rounded-md bg-[#eaf3ee] px-2 py-0.5">
+                    {intervalSeconds} segundos por slide
+                  </span>
+                </div>
                 <input
-                  type="text"
-                  value={content.button_url}
-                  onChange={(e) => setContent({ ...content, button_url: e.target.value })}
-                  className="w-full rounded-xl border border-[#e6e7e4] bg-[#fafbf9] px-3.5 py-2 text-xs text-[#202522] focus:border-[#1f6b4f] focus:outline-none"
-                  placeholder="Ex: /#novidades"
+                  type="range"
+                  min={HERO_INTERVAL_MIN}
+                  max={HERO_INTERVAL_MAX}
+                  value={intervalSeconds}
+                  onChange={(e) => setIntervalSeconds(Number(e.target.value))}
+                  className="w-full accent-[#1f6b4f] mt-1"
                 />
-              </div>
-            </div>
-
-            <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[#5f6863]">
-                Texto Alternativo (Acessibilidade Alt)
-              </label>
-              <input
-                type="text"
-                value={content.alt_text}
-                onChange={(e) => setContent({ ...content, alt_text: e.target.value })}
-                className="w-full rounded-xl border border-[#e6e7e4] bg-[#fafbf9] px-3.5 py-2 text-xs text-[#202522] focus:border-[#1f6b4f] focus:outline-none"
-                placeholder="Descrição acessível da imagem para leitores de tela"
-              />
-            </div>
-          </div>
-
-          {/* Coluna 2: Imagens, Alinhamento e Estilo */}
-          <div className="space-y-5 rounded-2xl border border-[#e6e7e4] bg-white p-6 shadow-sm">
-            <h2 className="font-serif text-base font-bold text-[#202522]">
-              Imagens & Apresentação Visual
-            </h2>
-
-            {/* Imagem Desktop */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-semibold uppercase tracking-wider text-[#5f6863]">
-                  Imagem para Desktop (1920x800 recomendada)
-                </label>
-                <label className="cursor-pointer text-xs font-bold text-[#1f6b4f] hover:underline">
-                  {isUploading === "desktop" ? "Enviando..." : "Fazer Upload ↑"}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    disabled={isUploading !== null}
-                    onChange={(e) => {
-                      if (e.target.files?.[0]) handleFileUpload(e.target.files[0], "desktop");
-                    }}
-                  />
-                </label>
-              </div>
-              <input
-                type="text"
-                value={content.desktop_image_url}
-                onChange={(e) => setContent({ ...content, desktop_image_url: e.target.value })}
-                className="w-full rounded-xl border border-[#e6e7e4] bg-[#fafbf9] px-3.5 py-2 text-xs text-[#202522] focus:border-[#1f6b4f] focus:outline-none"
-                placeholder="URL da imagem desktop ou use o botão de upload acima"
-              />
-            </div>
-
-            {/* Imagem Mobile */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-semibold uppercase tracking-wider text-[#5f6863]">
-                  Imagem para Mobile (Opcional - 768x900 recomendada)
-                </label>
-                <label className="cursor-pointer text-xs font-bold text-[#1f6b4f] hover:underline">
-                  {isUploading === "mobile" ? "Enviando..." : "Fazer Upload ↑"}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    disabled={isUploading !== null}
-                    onChange={(e) => {
-                      if (e.target.files?.[0]) handleFileUpload(e.target.files[0], "mobile");
-                    }}
-                  />
-                </label>
-              </div>
-              <input
-                type="text"
-                value={content.mobile_image_url}
-                onChange={(e) => setContent({ ...content, mobile_image_url: e.target.value })}
-                className="w-full rounded-xl border border-[#e6e7e4] bg-[#fafbf9] px-3.5 py-2 text-xs text-[#202522] focus:border-[#1f6b4f] focus:outline-none"
-                placeholder="URL da imagem mobile (ou manter vazio para usar desktop)"
-              />
-            </div>
-
-            {/* Alinhamento do Conteúdo */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[#5f6863]">
-                  Alinhamento do Texto
-                </label>
-                <select
-                  value={content.content_alignment}
-                  onChange={(e) =>
-                    setContent({
-                      ...content,
-                      content_alignment: e.target.value as "left" | "center" | "right",
-                    })
-                  }
-                  className="w-full rounded-xl border border-[#e6e7e4] bg-[#fafbf9] px-3.5 py-2 text-xs text-[#202522] focus:border-[#1f6b4f] focus:outline-none"
-                >
-                  <option value="left">Esquerda (Padrão)</option>
-                  <option value="center">Centralizado</option>
-                  <option value="right">Direita</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[#5f6863]">
-                  Layout da Imagem
-                </label>
-                <select
-                  value={content.image_position}
-                  onChange={(e) =>
-                    setContent({
-                      ...content,
-                      image_position: e.target.value as "background" | "split-right" | "split-left",
-                    })
-                  }
-                  className="w-full rounded-xl border border-[#e6e7e4] bg-[#fafbf9] px-3.5 py-2 text-xs text-[#202522] focus:border-[#1f6b4f] focus:outline-none"
-                >
-                  <option value="background">Imagem no Fundo (Background)</option>
-                  <option value="split-right">Dividido (Imagem à Direita)</option>
-                  <option value="split-left">Dividido (Imagem à Esquerda)</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Controle de Opacidade da Sobreposição */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-semibold uppercase tracking-wider text-[#5f6863]">
-                  Opacidade de Contraste (Legibilidade)
-                </label>
-                <span className="text-xs font-bold text-[#1f6b4f]">
-                  {content.overlay_opacity}%
-                </span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="80"
-                value={content.overlay_opacity}
-                onChange={(e) => setContent({ ...content, overlay_opacity: Number(e.target.value) })}
-                className="w-full accent-[#1f6b4f]"
-              />
-              <p className="mt-1 text-[11px] text-[#7f8d85]">
-                Aplica um filtro escuro suave sobre a imagem para garantir que o texto fique sempre legível.
-              </p>
-            </div>
-          </div>
-        </div>
-      ) : (
-        /* Aba de Pré-visualização ao Vivo */
-        <div className="rounded-2xl border border-[#e6e7e4] bg-white p-6 shadow-sm">
-          <div className="mb-4 flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#5f6863]">
-              Exibindo visualização aproximada de como a Hero ficará na loja pública:
-            </span>
-          </div>
-
-          <div
-            className={`mx-auto overflow-hidden rounded-2xl border border-[#e6e7e4] transition-all duration-300 ${
-              previewDevice === "mobile" ? "max-w-[390px]" : "w-full"
-            }`}
-          >
-            {/* Componente Hero Simulado com os dados do editor */}
-            <div className="relative min-h-[460px] flex items-center bg-[#18221e] text-white overflow-hidden">
-              {/* Imagem de Fundo */}
-              <div
-                className="absolute inset-0 bg-cover bg-center transition-all duration-500"
-                style={{
-                  backgroundImage: `url(${
-                    previewDevice === "mobile" && content.mobile_image_url
-                      ? content.mobile_image_url
-                      : content.desktop_image_url || "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908"
-                  })`,
-                }}
-              />
-
-              {/* Filtro de Opacidade */}
-              <div
-                className="absolute inset-0 bg-black transition-opacity"
-                style={{ opacity: content.overlay_opacity / 100 }}
-              />
-
-              {/* Conteúdo Sobreposto */}
-              <div
-                className={`relative z-10 w-full p-8 md:p-14 ${
-                  content.content_alignment === "center"
-                    ? "text-center"
-                    : content.content_alignment === "right"
-                    ? "text-right"
-                    : "text-left"
-                }`}
-              >
-                <div
-                  className={`max-w-xl ${
-                    content.content_alignment === "center"
-                      ? "mx-auto"
-                      : content.content_alignment === "right"
-                      ? "ml-auto"
-                      : ""
-                  }`}
-                >
-                  <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#a9cbbb] mb-2">
-                    Use Três Marias
-                  </p>
-                  <h1 className="font-serif text-2xl font-bold leading-tight md:text-4xl text-white">
-                    {content.title || "Título de Exemplo da Coleção"}
-                  </h1>
-                  {content.description && (
-                    <p className="mt-3 text-xs leading-relaxed text-[#dce3df] md:text-sm">
-                      {content.description}
-                    </p>
-                  )}
-                  {content.button_text && (
-                    <div className="mt-6">
-                      <span className="inline-block rounded-xl bg-[#1f6b4f] px-6 py-3 text-xs font-semibold tracking-wider uppercase text-white shadow-md">
-                        {content.button_text}
-                      </span>
-                    </div>
-                  )}
+                <div className="flex justify-between text-[10px] text-[#777d78] mt-1">
+                  <span>Rápido ({HERO_INTERVAL_MIN}s)</span>
+                  <span>Padrão (5s–6s)</span>
+                  <span>Lento ({HERO_INTERVAL_MAX}s)</span>
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Gerenciamento de Slides: Lista à Esquerda + Editor à Direita */}
+          <div className="grid gap-6 lg:grid-cols-12">
+            {/* Lista e Reordenação de Slides */}
+            <div className="lg:col-span-4 rounded-2xl border border-[#e6e7e4] bg-white p-5 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-serif text-sm font-bold text-[#202522]">
+                    Slides ({slides.length}/{HERO_MAX_SLIDES})
+                  </h3>
+                  <p className="text-[11px] text-[#777d78]">Selecione um slide para editar</p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleAddSlide}
+                  disabled={slides.length >= HERO_MAX_SLIDES}
+                  className="rounded-lg bg-[#1f6b4f] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#18563f] disabled:opacity-50"
+                >
+                  + Adicionar
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                {slides.map((s, idx) => (
+                  <div
+                    key={s.id || idx}
+                    onClick={() => setActiveSlideIndex(idx)}
+                    className={`flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition ${
+                      activeSlideIndex === idx
+                        ? "border-[#1f6b4f] bg-[#eaf3ee]/60 shadow-xs"
+                        : "border-[#e6e7e4] bg-[#fafbf9] hover:bg-white"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 overflow-hidden">
+                      <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-white border border-[#e6e7e4] text-[11px] font-bold text-[#202522]">
+                        {idx + 1}
+                      </span>
+                      {s.image_url ? (
+                        <img
+                          src={s.image_url}
+                          alt="thumb"
+                          className="size-9 rounded-md object-cover border border-[#e6e7e4] shrink-0"
+                        />
+                      ) : (
+                        <div className="size-9 rounded-md bg-[#e6e7e4] flex items-center justify-center text-[10px] text-[#777d78] shrink-0">
+                          Sem foto
+                        </div>
+                      )}
+                      <div className="overflow-hidden">
+                        <p className="text-xs font-semibold text-[#202522] truncate">
+                          {s.title || s.alt_text || `Slide ${idx + 1}`}
+                        </p>
+                        <p className="text-[10px] text-[#777d78] capitalize">
+                          {s.image_fit === "contain" ? "Arte pronta (contain)" : "Tela cheia (cover)"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        disabled={idx === 0}
+                        onClick={() => handleMoveSlide(idx, "up")}
+                        title="Mover para cima"
+                        className="p-1 text-[#777d78] hover:text-[#1f6b4f] disabled:opacity-30"
+                      >
+                        ▲
+                      </button>
+                      <button
+                        type="button"
+                        disabled={idx === slides.length - 1}
+                        onClick={() => handleMoveSlide(idx, "down")}
+                        title="Mover para baixo"
+                        className="p-1 text-[#777d78] hover:text-[#1f6b4f] disabled:opacity-30"
+                      >
+                        ▼
+                      </button>
+                      <button
+                        type="button"
+                        disabled={slides.length <= 1}
+                        onClick={() => handleRemoveSlide(idx)}
+                        title="Remover slide"
+                        className="p-1 text-[#777d78] hover:text-red-700 disabled:opacity-30"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Formulário de Edição do Slide Ativo */}
+            {activeSlide && (
+              <div className="lg:col-span-8 rounded-2xl border border-[#e6e7e4] bg-white p-6 shadow-sm space-y-5">
+                <div className="flex items-center justify-between border-b border-[#f0f2f0] pb-3">
+                  <h3 className="font-serif text-base font-bold text-[#202522]">
+                    Editando Slide {activeSlideIndex + 1} de {slides.length}
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveSlide(activeSlideIndex)}
+                    disabled={slides.length <= 1}
+                    className="text-xs font-semibold text-red-600 hover:text-red-800 disabled:opacity-40"
+                  >
+                    Excluir este slide
+                  </button>
+                </div>
+
+                {/* Upload e URL da Foto */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-[#5f6863]">
+                      Imagem do Slide *
+                    </label>
+                    <label className="cursor-pointer text-xs font-bold text-[#1f6b4f] hover:underline">
+                      {isUploading === activeSlideIndex ? "Enviando imagem..." : "Fazer Upload de Foto ↑"}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={isUploading !== null}
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) {
+                            handleFileUpload(e.target.files[0], activeSlideIndex);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+                  <input
+                    type="text"
+                    value={activeSlide.image_url}
+                    onChange={(e) => updateSlide(activeSlideIndex, { image_url: e.target.value })}
+                    className="w-full rounded-xl border border-[#e6e7e4] bg-[#fafbf9] px-3.5 py-2 text-xs text-[#202522] focus:border-[#1f6b4f] focus:outline-none"
+                    placeholder="URL da imagem ou envie uma foto acima"
+                  />
+                </div>
+
+                {/* Prévia da Foto do Slide */}
+                {activeSlide.image_url && (
+                  <div className="flex items-center gap-4 p-3 rounded-xl bg-[#fafbf9] border border-[#e6e7e4]">
+                    <img
+                      src={activeSlide.image_url}
+                      alt="Prévia"
+                      className="size-20 rounded-lg object-contain bg-[#16302a] border border-[#e6e7e4]"
+                    />
+                    <div className="text-xs space-y-1">
+                      <p className="font-semibold text-[#202522]">Prévia da imagem carregada</p>
+                      <p className="text-[11px] text-[#777d78]">
+                        Dica: para as artes verticais (como as que você enviou), use o modo <strong>Arte Pronta (contain)</strong> abaixo para não cortar nenhum texto.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Enquadramento da Imagem */}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[#5f6863]">
+                      Formato de Exibição da Imagem
+                    </label>
+                    <select
+                      value={activeSlide.image_fit}
+                      onChange={(e) =>
+                        updateSlide(activeSlideIndex, {
+                          image_fit: e.target.value as "contain" | "cover",
+                        })
+                      }
+                      className="w-full rounded-xl border border-[#e6e7e4] bg-[#fafbf9] px-3.5 py-2 text-xs text-[#202522] focus:border-[#1f6b4f] focus:outline-none"
+                    >
+                      <option value="contain">Arte Pronta / Proporcional (Recomendado para artes 4:5)</option>
+                      <option value="cover">Preencher tela inteira (Cover)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[#5f6863]">
+                      Texto Alternativo (Acessibilidade)
+                    </label>
+                    <input
+                      type="text"
+                      value={activeSlide.alt_text}
+                      onChange={(e) => updateSlide(activeSlideIndex, { alt_text: e.target.value })}
+                      className="w-full rounded-xl border border-[#e6e7e4] bg-[#fafbf9] px-3.5 py-2 text-xs text-[#202522] focus:border-[#1f6b4f] focus:outline-none"
+                      placeholder="Ex: Arte Quem Somos – Use Três Marias"
+                    />
+                  </div>
+                </div>
+
+                {/* Textos Opcionais por cima do Slide */}
+                <div className="border-t border-[#f0f2f0] pt-4 space-y-4">
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#202522]">
+                      Frases & Textos Sobrepostos (Opcional)
+                    </h4>
+                    <p className="text-[11px] text-[#777d78]">
+                      Se a imagem já tiver o texto desenhado na própria arte, deixe estes campos em branco.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[#5f6863]">
+                      Sobretítulo / Coleção (Eyebrow)
+                    </label>
+                    <input
+                      type="text"
+                      value={activeSlide.eyebrow || ""}
+                      onChange={(e) => updateSlide(activeSlideIndex, { eyebrow: e.target.value })}
+                      className="w-full rounded-xl border border-[#e6e7e4] bg-[#fafbf9] px-3.5 py-2 text-xs text-[#202522] focus:border-[#1f6b4f] focus:outline-none"
+                      placeholder="Ex: Coleção Primavera • 2026"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[#5f6863]">
+                      Título do Slide
+                    </label>
+                    <input
+                      type="text"
+                      value={activeSlide.title || ""}
+                      onChange={(e) => updateSlide(activeSlideIndex, { title: e.target.value })}
+                      className="w-full rounded-xl border border-[#e6e7e4] bg-[#fafbf9] px-3.5 py-2 text-xs text-[#202522] focus:border-[#1f6b4f] focus:outline-none"
+                      placeholder="Ex: Seu estilo.<br>Do seu jeito."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[#5f6863]">
+                      Frase / Mensagem
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={activeSlide.description || ""}
+                      onChange={(e) => updateSlide(activeSlideIndex, { description: e.target.value })}
+                      className="w-full rounded-xl border border-[#e6e7e4] bg-[#fafbf9] px-3.5 py-2 text-xs text-[#202522] focus:border-[#1f6b4f] focus:outline-none"
+                      placeholder="Ex: Queremos que cada mulher encontre peças que expressem sua essência..."
+                    />
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[#5f6863]">
+                        Texto do Botão
+                      </label>
+                      <input
+                        type="text"
+                        value={activeSlide.button_text || ""}
+                        onChange={(e) => updateSlide(activeSlideIndex, { button_text: e.target.value })}
+                        className="w-full rounded-xl border border-[#e6e7e4] bg-[#fafbf9] px-3.5 py-2 text-xs text-[#202522] focus:border-[#1f6b4f] focus:outline-none"
+                        placeholder="Ex: Conhecer Peças"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[#5f6863]">
+                        Link do Botão
+                      </label>
+                      <input
+                        type="text"
+                        value={activeSlide.button_url || ""}
+                        onChange={(e) => updateSlide(activeSlideIndex, { button_url: e.target.value })}
+                        className="w-full rounded-xl border border-[#e6e7e4] bg-[#fafbf9] px-3.5 py-2 text-xs text-[#202522] focus:border-[#1f6b4f] focus:outline-none"
+                        placeholder="Ex: /novidades ou /vestidos"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        /* Aba de Prévia do Carrossel */
+        <div className="rounded-2xl border border-[#e6e7e4] bg-white p-6 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-serif text-base font-bold text-[#202522]">
+                Visualização do Carrossel ao Vivo
+              </h3>
+              <p className="text-xs text-[#777d78]">
+                Rotação a cada {intervalSeconds} segundos. Você também pode clicar nas setas ou bolinhas para navegar.
+              </p>
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-[#e6e7e4]">
+            <HeroCarousel content={currentContent} />
           </div>
         </div>
       )}

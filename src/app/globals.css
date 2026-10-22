@@ -70,7 +70,7 @@ body {
 }
 
 .btn-light:hover {
-  background: #f2f4f1;
-  color: var(--green-dark);
-  border-color: #f2f4f1;
+  background: var(--green-dark);
+  color: #ffffff;
+  border-color: var(--green-dark);
 }

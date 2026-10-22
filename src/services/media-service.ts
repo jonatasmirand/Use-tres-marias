@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 
-export const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/svg+xml"];
+export const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
 export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export interface UploadMediaResult {
@@ -15,7 +15,7 @@ export interface UploadMediaResult {
  */
 export async function uploadCmsMedia(file: File): Promise<UploadMediaResult> {
   if (!ALLOWED_MIME_TYPES.includes(file.type)) {
-    throw new Error(`Tipo de arquivo não permitido (${file.type}). Use JPG, PNG, WEBP ou SVG.`);
+    throw new Error(`Tipo de arquivo não permitido (${file.type}). Use JPG, PNG, WEBP.`);
   }
 
   if (file.size > MAX_FILE_SIZE) {

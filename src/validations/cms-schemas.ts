@@ -1,100 +1,98 @@
-import { HeroContent, CardsGridContent, CardItem } from "@/types/cms";
+import {
+  HeroContent,
+  HeroSlide,
+  LegacyHeroContent,
+  ShowcaseContent,
+  HERO_INTERVAL_MAX,
+  HERO_INTERVAL_MIN,
+  HERO_MAX_SLIDES,
+  DEFAULT_HERO_CONTENT,
+  DEFAULT_HERO_SLIDE,
+} from "@/types/cms";
 
-export function validateHeroContent(data: unknown): { isValid: boolean; errors: string[]; data: HeroContent | null } {
-  const errors: string[] = [];
+type ValidationResult<T> = { isValid: boolean; errors: string[]; data: T | null };
 
-  if (!data || typeof data !== "object") {
-    return { isValid: false, errors: ["O conteúdo da seção Hero é obrigatório."], data: null };
-  }
-
-  const c = data as Partial<HeroContent>;
-
-  if (!c.title || typeof c.title !== "string" || c.title.trim().length === 0) {
-    errors.push("O título principal da seção Hero é obrigatório.");
-  }
-
-  if (!c.desktop_image_url || typeof c.desktop_image_url !== "string" || c.desktop_image_url.trim().length === 0) {
-    errors.push("A imagem para desktop é obrigatória.");
-  }
-
-  if (c.button_url && typeof c.button_url === "string" && !c.button_url.startsWith("/") && !c.button_url.startsWith("http")) {
-    errors.push("O link do botão deve começar com '/' (interno) ou 'http' (externo).");
-  }
-
-  const validAlignments = ["left", "center", "right"];
-  if (c.content_alignment && !validAlignments.includes(c.content_alignment)) {
-    errors.push("O alinhamento de conteúdo deve ser 'left', 'center' ou 'right'.");
-  }
-
-  const validImagePositions = ["background", "split-right", "split-left"];
-  if (c.image_position && !validImagePositions.includes(c.image_position)) {
-    errors.push("A posição da imagem deve ser 'background', 'split-right' ou 'split-left'.");
-  }
-
-  const opacity = typeof c.overlay_opacity === "number" ? c.overlay_opacity : 30;
-  if (opacity < 0 || opacity > 100) {
-    errors.push("A opacidade de sobreposição deve estar entre 0% e 100%.");
-  }
-
-  if (errors.length > 0) {
-    return { isValid: false, errors, data: null };
-  }
-
-  const sanitized: HeroContent = {
-    desktop_image_url: c.desktop_image_url?.trim() || "",
-    mobile_image_url: c.mobile_image_url?.trim() || c.desktop_image_url?.trim() || "",
-    alt_text: c.alt_text?.trim() || "Destaque Use Três Marias",
-    title: c.title?.trim() || "",
-    description: c.description?.trim() || "",
-    button_text: c.button_text?.trim() || "Ver Coleção",
-    button_url: c.button_url?.trim() || "/#novidades",
-    content_alignment: (c.content_alignment as "left" | "center" | "right") || "left",
-    image_position: (c.image_position as "background" | "split-right" | "split-left") || "background",
-    overlay_opacity: opacity,
-  };
-
-  return { isValid: true, errors: [], data: sanitized };
+function str(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
 }
 
-export function validateCardsGridContent(data: unknown): { isValid: boolean; errors: string[]; data: CardsGridContent | null } {
-  if (!data || typeof data !== "object") {
-    return { isValid: false, errors: ["O conteúdo da seção de cards é obrigatório."], data: null };
+function isValidLink(url: string): boolean {
+  return url === "" || url.startsWith("/") || url.startsWith("http");
+}
+
+function clampInterval(value: unknown): number {
+  const n = typeof value === "number" && Number.isFinite(value) ? Math.round(value) : 5;
+  return Math.min(HERO_INTERVAL_MAX, Math.max(HERO_INTERVAL_MIN, n));
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Hero (carrossel)                                                          */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Converte qualquer conteúdo de Hero salvo (formato novo ou antigo) para o
+ * formato de carrossel. Nunca lança erro – usado na renderização.
+ */
+export function normalizeHeroContent(raw: unknown): HeroContent {
+  if (!raw || typeof raw !== "object") {
+    return DEFAULT_HERO_CONTENT;
   }
 
-  const c = data as Partial<CardsGridContent>;
+  const obj = raw as Partial<HeroContent> & Partial<LegacyHeroContent>;
+
+  // Se tiver slides já no formato carrossel com pelo menos 1 slide
+  if (Array.isArray(obj.slides) && obj.slides.length > 0) {
+    return {
+      interval_seconds: clampInterval(obj.interval_seconds),
+      slides: obj.slides
+        .filter((s): s is HeroSlide => !!s && typeof s === "object")
+        .map((s, idx) => ({
+          id: str(s.id) || `slide-${idx + 1}`,
+          image_url: str(s.image_url) || DEFAULT_HERO_SLIDE.image_url,
+          mobile_image_url: str(s.mobile_image_url),
+          alt_text: str(s.alt_text) || DEFAULT_HERO_SLIDE.alt_text,
+          image_fit: s.image_fit === "contain" ? "contain" : "cover",
+          eyebrow: str(s.eyebrow) || DEFAULT_HERO_SLIDE.eyebrow,
+          title: str(s.title) || DEFAULT_HERO_SLIDE.title,
+          description: str(s.description) || DEFAULT_HERO_SLIDE.description,
+          button_text: str(s.button_text) || DEFAULT_HERO_SLIDE.button_text,
+          button_url: str(s.button_url) || DEFAULT_HERO_SLIDE.button_url,
+        })),
+    };
+  }
+
+  // Se for o formato antigo da tabela (ou sem slides cadastrados), retorna o slide padrão da nova coleção
+  return DEFAULT_HERO_CONTENT;
+}
+
+export function validateHeroContent(data: unknown): ValidationResult<HeroContent> {
+  if (!data || typeof data !== "object") {
+    return { isValid: false, errors: ["O conteúdo do carrossel é obrigatório."], data: null };
+  }
+
+  const content = normalizeHeroContent(data);
   const errors: string[] = [];
 
-  if (!c.section_headline || typeof c.section_headline !== "string" || c.section_headline.trim().length === 0) {
-    errors.push("O título da seção é obrigatório.");
+  if (content.slides.length === 0) {
+    errors.push("Adicione pelo menos um slide ao carrossel.");
   }
 
-  if (!Array.isArray(c.cards) || c.cards.length !== 3) {
-    errors.push("A seção deve conter exatamente três cards de imagens configuráveis.");
-    return { isValid: false, errors, data: null };
+  if (content.slides.length > HERO_MAX_SLIDES) {
+    errors.push(`O carrossel aceita no máximo ${HERO_MAX_SLIDES} slides.`);
   }
 
-  const sanitizedCards = c.cards.map((card, idx) => {
-    const item = card as Partial<CardItem>;
-    if (!item.title || typeof item.title !== "string" || item.title.trim().length === 0) {
-      errors.push(`O título do card ${idx + 1} é obrigatório.`);
+  content.slides.forEach((slide, idx) => {
+    const n = idx + 1;
+    if (!slide.image_url) {
+      errors.push(`O slide ${n} precisa de uma imagem.`);
     }
-    if (!item.image_url || typeof item.image_url !== "string" || item.image_url.trim().length === 0) {
-      errors.push(`A imagem do card ${idx + 1} é obrigatória.`);
+    if (!isValidLink(slide.button_url || "")) {
+      errors.push(`O link do botão do slide ${n} deve começar com '/' (interno) ou 'http' (externo).`);
     }
-
-    return {
-      id: item.id || `card-${idx + 1}`,
-      image_url: item.image_url?.trim() || "",
-      alt_text: item.alt_text?.trim() || item.title?.trim() || `Peça ${idx + 1}`,
-      title: item.title?.trim() || `Peça ${idx + 1}`,
-      description: item.description?.trim() || "",
-      button_text: item.button_text?.trim() || "Ver Detalhes",
-      button_url: item.button_url?.trim() || "/#novidades",
-      badge: item.badge?.trim() || "",
-      is_visible: typeof item.is_visible === "boolean" ? item.is_visible : true,
-      position: (idx + 1) as 1 | 2 | 3,
-    };
-  }) as [CardItem, CardItem, CardItem];
+    if (slide.button_text && !slide.button_url) {
+      errors.push(`O slide ${n} tem texto de botão, mas está sem link.`);
+    }
+  });
 
   if (errors.length > 0) {
     return { isValid: false, errors, data: null };
@@ -104,14 +102,55 @@ export function validateCardsGridContent(data: unknown): { isValid: boolean; err
     isValid: true,
     errors: [],
     data: {
-      section_badge: c.section_badge?.trim() || "",
-      section_headline: c.section_headline?.trim() || "",
-      section_subheadline: c.section_subheadline?.trim() || "",
-      view_all_text: c.view_all_text?.trim() || "Ver Toda a Coleção",
-      view_all_url: c.view_all_url?.trim() || "/#novidades",
-      cards: sanitizedCards,
+      interval_seconds: content.interval_seconds,
+      slides: content.slides.map((s, idx) => ({
+        ...s,
+        alt_text: s.alt_text || s.title || `Slide ${idx + 1} – Três Marias`,
+        mobile_image_url: s.mobile_image_url || "",
+      })),
     },
   };
 }
 
-export const validateNovidadesContent = validateCardsGridContent;
+/* -------------------------------------------------------------------------- */
+/*  Vitrines (Novidades / Conjuntos)                                          */
+/* -------------------------------------------------------------------------- */
+
+export function normalizeShowcaseContent(raw: unknown, fallbackUrl = "/novidades"): ShowcaseContent {
+  const obj = (raw && typeof raw === "object" ? raw : {}) as Partial<ShowcaseContent>;
+  const max = typeof obj.max_items === "number" && Number.isFinite(obj.max_items) ? obj.max_items : 8;
+
+  return {
+    section_badge: str(obj.section_badge),
+    section_headline: str(obj.section_headline),
+    section_subheadline: str(obj.section_subheadline),
+    view_all_text: str(obj.view_all_text) || "Ver todos",
+    // Links antigos com âncora (/#vestidos) passam a apontar para a página da categoria
+    view_all_url: (str(obj.view_all_url) || fallbackUrl).replace(/^\/#/, "/"),
+    max_items: Math.min(24, Math.max(1, Math.round(max))),
+  };
+}
+
+export function validateShowcaseContent(data: unknown): ValidationResult<ShowcaseContent> {
+  if (!data || typeof data !== "object") {
+    return { isValid: false, errors: ["O conteúdo da vitrine é obrigatório."], data: null };
+  }
+
+  const content = normalizeShowcaseContent(data);
+  const errors: string[] = [];
+
+  if (!content.section_headline) {
+    errors.push("O título da vitrine é obrigatório.");
+  }
+  if (!isValidLink(content.view_all_url || "")) {
+    errors.push("O link 'ver todos' deve começar com '/' ou 'http'.");
+  }
+
+  if (errors.length > 0) {
+    return { isValid: false, errors, data: null };
+  }
+
+  return { isValid: true, errors: [], data: content };
+}
+
+export const validateCardsGridContent = validateShowcaseContent;

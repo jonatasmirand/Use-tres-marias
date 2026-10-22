@@ -12,6 +12,10 @@ export async function GET() {
       sku,
       description,
       price,
+      images,
+      sizes,
+      is_new,
+      position,
       stock_quantity,
       category_id,
       categories (
@@ -21,6 +25,7 @@ export async function GET() {
       )
     `)
         .eq("is_active", true)
+        .order("position", { ascending: true })
         .order("name", { ascending: true });
 
     if (error) {
