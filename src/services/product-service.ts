@@ -574,3 +574,154 @@ export async function deleteProduct(id: string): Promise<void> {
     throw new Error(error.message || "Erro ao excluir produto.");
   }
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Busca Inteligente por Palavras-Chave e Sinônimos Equivalentes             */
+/* -------------------------------------------------------------------------- */
+
+export function normalizeSearchTerm(str: string): string {
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+/**
+ * Termos equivalentes e sinônimos frequentes no vocabulário de moda feminina
+ */
+export const SEARCH_SYNONYMS: Record<string, string[]> = {
+  vestido: ["vestidos", "vestido", "midi", "longo", "evase"],
+  vestidos: ["vestidos", "vestido", "midi", "longo", "evase"],
+  blusa: ["blusas", "blusa", "camisa", "camisas", "regata", "cropped"],
+  blusas: ["blusas", "blusa", "camisa", "camisas", "regata", "cropped"],
+  camisa: ["camisa", "camisas", "blusa", "blusas", "linho"],
+  camisas: ["camisa", "camisas", "blusa", "blusas", "linho"],
+  regata: ["regata", "blusa", "blusas", "seda"],
+  bermuda: ["bermudas", "bermuda", "short", "shorts", "alfaiataria"],
+  bermudas: ["bermudas", "bermuda", "short", "shorts", "alfaiataria"],
+  short: ["bermuda", "bermudas", "short", "shorts"],
+  shorts: ["bermuda", "bermudas", "short", "shorts"],
+  conjunto: ["conjuntos", "conjunto", "colete", "calca", "pantalona", "saia"],
+  conjuntos: ["conjuntos", "conjunto", "colete", "calca", "pantalona", "saia"],
+  colete: ["colete", "conjunto", "conjuntos"],
+  calca: ["calca", "calça", "pantalona", "conjunto", "alfaiataria"],
+  pantalona: ["pantalona", "calca", "conjunto"],
+  saia: ["saia", "conjunto", "burgundy"],
+  linho: ["linho", "puro linho", "cru", "natural"],
+  alfaiataria: ["alfaiataria", "estruturado", "corte reto"],
+  seda: ["seda", "regata"],
+  midi: ["midi", "vestido", "saia"],
+  longo: ["longo", "vestido"],
+  preto: ["preto", "preta"],
+  preta: ["preto", "preta"],
+  branco: ["branco", "branca", "off-white", "alvo", "cru"],
+  branca: ["branco", "branca", "off-white", "alvo", "cru"],
+  offwhite: ["off-white", "cru", "alvo", "branco"],
+  "off-white": ["off-white", "cru", "alvo", "branco"],
+  cru: ["cru", "off-white", "linho", "natural"],
+  verde: ["verde", "verde floresta"],
+  marsala: ["marsala", "burgundy", "vinho"],
+  burgundy: ["burgundy", "marsala", "vinho"],
+  novidades: ["novidade", "novo", "is_new"],
+  novidade: ["novidade", "novo", "is_new"],
+};
+
+/**
+ * Busca produtos ativos no catálogo por nome, descrição, categoria ou sinônimos
+ */
+export async function searchProducts(query: string, limit = 20): Promise<Product[]> {
+  const rawQuery = query.trim();
+  if (!rawQuery) {
+    return [];
+  }
+
+  // 1. Obtém todos os produtos ativos (do Supabase ou Fallback)
+  const allProducts = await getProducts({ includeInactive: false });
+
+  // 2. Normaliza os tokens digitados pela cliente
+  const queryTokens = normalizeSearchTerm(rawQuery)
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (queryTokens.length === 0) {
+    return [];
+  }
+
+  // 3. Avalia e pontua a relevância de cada produto
+  const scoredProducts: { product: Product; score: number }[] = [];
+
+  for (const product of allProducts) {
+    const normName = normalizeSearchTerm(product.name);
+    const normDesc = normalizeSearchTerm(product.description || "");
+    const normCat = normalizeSearchTerm(product.category?.name || "");
+    const normSlug = normalizeSearchTerm(product.slug || "");
+    const sizes = (product.sizes || []).map((s) => s.toUpperCase());
+
+    let totalScore = 0;
+    let matchesAllTokens = true;
+
+    for (const token of queryTokens) {
+      // Expande sinônimos do token
+      const synonyms = SEARCH_SYNONYMS[token] || [token];
+      const tokenVariants = Array.from(new Set([token, ...synonyms]));
+
+      let tokenMatched = false;
+
+      // Correspondência com cada variante
+      for (const variant of tokenVariants) {
+        const normVariant = normalizeSearchTerm(variant);
+
+        // Pontuação por nome do produto
+        if (normName === normVariant) {
+          totalScore += 100;
+          tokenMatched = true;
+        } else if (normName.includes(normVariant)) {
+          totalScore += 40;
+          tokenMatched = true;
+        }
+
+        // Pontuação por categoria
+        if (normCat === normVariant || normSlug === normVariant) {
+          totalScore += 30;
+          tokenMatched = true;
+        } else if (normCat.includes(normVariant)) {
+          totalScore += 20;
+          tokenMatched = true;
+        }
+
+        // Pontuação por descrição
+        if (normDesc.includes(normVariant)) {
+          totalScore += 15;
+          tokenMatched = true;
+        }
+
+        // Pontuação por novidade
+        if ((token === "novidade" || token === "novidades") && product.is_new) {
+          totalScore += 35;
+          tokenMatched = true;
+        }
+
+        // Pontuação por tamanho
+        if (sizes.includes(token.toUpperCase())) {
+          totalScore += 15;
+          tokenMatched = true;
+        }
+      }
+
+      if (!tokenMatched) {
+        matchesAllTokens = false;
+        break;
+      }
+    }
+
+    if (matchesAllTokens && totalScore > 0) {
+      scoredProducts.push({ product, score: totalScore });
+    }
+  }
+
+  // 4. Ordena por relevância (maior score primeiro)
+  scoredProducts.sort((a, b) => b.score - a.score);
+
+  return scoredProducts.slice(0, limit).map((sp) => sp.product);
+}

@@ -3,12 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Product } from "@/types/catalog";
+import { useCart } from "@/context/CartContext";
 
 interface ProductCardProps {
   product: Product;
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
+  const { addItem } = useCart();
   const [isHovered, setIsHovered] = useState(false);
 
   const primaryImage = product.images?.[0] || "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=700&q=80";
@@ -51,6 +53,19 @@ export default function ProductCard({ product }: ProductCardProps) {
             {product.category.name}
           </span>
         )}
+
+        {/* Botão de Adição Rápida à Sacola no Hover */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            addItem(product, product.sizes?.[0] || undefined);
+          }}
+          className="absolute inset-x-3 bottom-3 z-20 flex items-center justify-center gap-1.5 rounded-xl bg-white/95 py-2.5 text-[11px] font-bold uppercase tracking-wider text-[#1f6b4f] shadow-lg backdrop-blur-xs transition-all duration-300 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 hover:bg-[#1f6b4f] hover:text-white"
+        >
+          <span>+ Adicionar à Sacola</span>
+        </button>
       </Link>
 
       {/* Detalhes do Produto */}

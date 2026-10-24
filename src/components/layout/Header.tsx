@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useCart } from "@/context/CartContext";
+import SearchModal from "@/components/search/SearchModal";
 
 const navigationLinks = [
   { label: "Novidades", href: "/novidades" },
@@ -13,11 +15,8 @@ const navigationLinks = [
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [cartCount, setCartCount] = useState(0);
-
-  function handleCartClick() {
-    setCartCount((c) => c + 1);
-  }
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const { openCart, totalCount } = useCart();
 
   return (
     <>
@@ -65,23 +64,29 @@ export default function Header() {
           <div className="flex items-center justify-end gap-[18px]">
             <button
               type="button"
-              aria-label="Buscar"
-              onClick={() => alert("Busca em breve")}
-              className="text-[19px] text-[#202522] transition hover:text-[#1f6b4f]"
+              aria-label="Buscar produtos"
+              onClick={() => setIsSearchOpen(true)}
+              className="relative p-1 text-[#202522] transition hover:text-[#1f6b4f] cursor-pointer"
             >
-              ⌕
+              <svg className="size-[20px]" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+              </svg>
             </button>
 
             <button
               type="button"
-              aria-label="Carrinho de Compras"
-              onClick={handleCartClick}
-              className="relative text-[19px] text-[#202522] transition hover:text-[#1f6b4f]"
+              aria-label="Abrir Sacola de Compras"
+              onClick={openCart}
+              className="relative p-1 text-[#202522] transition hover:text-[#1f6b4f] cursor-pointer"
             >
-              <span>♡</span>
-              <span className="absolute -top-2 -right-2 grid size-[17px] place-items-center rounded-full bg-[#1f6b4f] text-[10px] font-bold text-white">
-                {cartCount}
-              </span>
+              <svg className="size-[21px]" fill="none" stroke="currentColor" strokeWidth="1.6" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25c-.669 0-1.189-.578-1.119-1.243l1.263-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119.993z" />
+              </svg>
+              {totalCount > 0 && (
+                <span className="absolute -top-1 -right-1 grid size-[18px] place-items-center rounded-full bg-[#1f6b4f] text-[10px] font-bold text-white shadow-sm transition-transform animate-scale-in">
+                  {totalCount}
+                </span>
+              )}
             </button>
           </div>
         </div>
@@ -108,6 +113,12 @@ export default function Header() {
           </nav>
         )}
       </header>
+
+      {/* Modal Interativo de Busca */}
+      <SearchModal
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+      />
     </>
   );
 }

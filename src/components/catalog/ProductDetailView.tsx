@@ -3,12 +3,16 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Product } from "@/types/catalog";
+import { useCart } from "@/context/CartContext";
 
 interface ProductDetailViewProps {
   product: Product;
 }
 
+const WHATSAPP_PHONE = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "5511999999999";
+
 export default function ProductDetailView({ product }: ProductDetailViewProps) {
+  const { addItem } = useCart();
   const images = product.images.length > 0 ? product.images : [
     "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=900&q=80",
   ];
@@ -17,7 +21,7 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
   const [selectedSize, setSelectedSize] = useState<string | null>(
     product.sizes?.[0] || null
   );
-  const [addedNotice, setAddedNotice] = useState(false);
+  const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
 
   const formattedPrice = new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -30,8 +34,7 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
   }).format(product.price / 6);
 
   function handleAddToCart() {
-    setAddedNotice(true);
-    setTimeout(() => setAddedNotice(false), 3000);
+    addItem(product, selectedSize || undefined, 1);
   }
 
   const whatsappMessage = encodeURIComponent(
@@ -136,7 +139,13 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
                 <span className="text-xs font-bold uppercase tracking-wider text-[#202522]">
                   Tamanho: {selectedSize}
                 </span>
-                <span className="text-[11px] text-[#777d78]">Guia de Medidas</span>
+                <button
+                  type="button"
+                  onClick={() => setIsSizeGuideOpen(true)}
+                  className="text-[11px] font-semibold text-[#1f6b4f] hover:underline cursor-pointer"
+                >
+                  📐 Guia de Medidas
+                </button>
               </div>
               <div className="flex flex-wrap gap-2.5">
                 {product.sizes.map((sz) => (
@@ -168,7 +177,7 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
             </button>
 
             <a
-              href={`https://wa.me/5511999999999?text=${whatsappMessage}`}
+              href={`https://wa.me/${WHATSAPP_PHONE}?text=${whatsappMessage}`}
               target="_blank"
               rel="noopener noreferrer"
               className="w-full text-center rounded-xl border border-[#d2e5db] bg-[#eaf3ee] py-3 text-xs font-bold uppercase tracking-widest text-[#1f6b4f] transition hover:bg-[#d8ecdf]"
@@ -176,12 +185,6 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
               Comprar pelo WhatsApp →
             </a>
           </div>
-
-          {addedNotice && (
-            <div className="mt-3 rounded-xl border border-[#d2e5db] bg-[#eaf3ee] p-3 text-center text-xs font-semibold text-[#1f6b4f] animate-fade-in">
-              ✓ Produto adicionado à sua sacola de compras!
-            </div>
-          )}
 
           {/* Descrição */}
           {product.description && (
@@ -212,6 +215,86 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
           </div>
         </div>
       </div>
+
+      {/* Modal: Tabela de Medidas Oficial */}
+      {isSizeGuideOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
+          <div className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-[#e6e7e4]">
+            <div className="flex items-center justify-between border-b border-[#f0f2f0] pb-3 mb-4">
+              <div>
+                <h3 className="font-serif text-lg font-bold text-[#202522]">
+                  Tabela & Guia de Medidas
+                </h3>
+                <p className="text-xs text-[#777d78]">Valores em centímetros (cm)</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSizeGuideOpen(false)}
+                className="flex size-8 items-center justify-center rounded-full text-[#777d78] hover:bg-[#fafbf9] hover:text-[#202522]"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-[#e6e7e4] bg-[#fafbf9] text-[#202522]">
+                    <th className="py-2.5 px-3 font-bold">Tamanho</th>
+                    <th className="py-2.5 px-3 font-bold">Busto</th>
+                    <th className="py-2.5 px-3 font-bold">Cintura</th>
+                    <th className="py-2.5 px-3 font-bold">Quadril</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#f0f2f0] text-[#5f6863]">
+                  <tr>
+                    <td className="py-2 px-3 font-bold text-[#1f6b4f]">PP (36)</td>
+                    <td className="py-2 px-3">82 – 86 cm</td>
+                    <td className="py-2 px-3">64 – 68 cm</td>
+                    <td className="py-2 px-3">90 – 94 cm</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 px-3 font-bold text-[#1f6b4f]">P (38)</td>
+                    <td className="py-2 px-3">86 – 90 cm</td>
+                    <td className="py-2 px-3">68 – 72 cm</td>
+                    <td className="py-2 px-3">94 – 98 cm</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 px-3 font-bold text-[#1f6b4f]">M (40)</td>
+                    <td className="py-2 px-3">90 – 96 cm</td>
+                    <td className="py-2 px-3">72 – 78 cm</td>
+                    <td className="py-2 px-3">98 – 104 cm</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 px-3 font-bold text-[#1f6b4f]">G (42)</td>
+                    <td className="py-2 px-3">96 – 102 cm</td>
+                    <td className="py-2 px-3">78 – 84 cm</td>
+                    <td className="py-2 px-3">104 – 110 cm</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 px-3 font-bold text-[#1f6b4f]">GG (44)</td>
+                    <td className="py-2 px-3">102 – 108 cm</td>
+                    <td className="py-2 px-3">84 – 90 cm</td>
+                    <td className="py-2 px-3">110 – 116 cm</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-4 rounded-xl bg-[#faf8f3] p-3 text-[11px] text-[#5e6862] leading-relaxed">
+              💡 <strong>Como medir:</strong> Use uma fita métrica maleável sem apertar. Se suas medidas ficarem entre dois tamanhos, escolha o tamanho maior para um caimento mais confortável.
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsSizeGuideOpen(false)}
+              className="mt-5 w-full rounded-xl bg-[#1f6b4f] py-2.5 text-xs font-bold uppercase tracking-wider text-white transition hover:bg-[#164d3a]"
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

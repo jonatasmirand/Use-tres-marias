@@ -26,9 +26,6 @@ export default function Footer() {
             <Link href="/#trocas" className="block text-[12px] leading-[1.8] text-[#aeb9b3] hover:text-white transition">
               Trocas e devoluções
             </Link>
-            <Link href="/#envios" className="block text-[12px] leading-[1.8] text-[#aeb9b3] hover:text-white transition">
-              Envio e entrega
-            </Link>
           </div>
         </div>
 
@@ -40,13 +37,7 @@ export default function Footer() {
           <div className="space-y-1">
             <Link href="/#sobre" className="block text-[12px] leading-[1.8] text-[#aeb9b3] hover:text-white transition">
               Sobre nós
-            </Link>
-            <Link href="/#privacidade" className="block text-[12px] leading-[1.8] text-[#aeb9b3] hover:text-white transition">
-              Privacidade
-            </Link>
-            <Link href="/#termos" className="block text-[12px] leading-[1.8] text-[#aeb9b3] hover:text-white transition">
-              Termos de uso
-            </Link>
+            </Link> 
           </div>
         </div>
 
