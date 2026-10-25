@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Product } from "@/types/catalog";
 import { useCart } from "@/context/CartContext";
 
@@ -72,7 +73,7 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
       </nav>
 
       <div className="grid gap-10 lg:grid-cols-12">
-        {/* Galeria de Fotos (Desktop e Mobile) */}
+                {/* Galeria de Fotos (Desktop e Mobile) */}
         <div className="lg:col-span-7 flex flex-col-reverse md:flex-row gap-4">
           {/* Miniaturas */}
           {images.length > 1 && (
@@ -82,13 +83,19 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
                   key={idx}
                   type="button"
                   onClick={() => setSelectedImage(idx)}
-                  className={`size-16 sm:size-20 overflow-hidden rounded-lg border-2 transition ${
+                  className={`relative size-16 sm:size-20 overflow-hidden rounded-lg border-2 transition ${
                     selectedImage === idx
                       ? "border-[#1f6b4f] shadow-sm"
                       : "border-transparent opacity-70 hover:opacity-100"
                   }`}
                 >
-                  <img src={img} alt={`Foto ${idx + 1}`} className="size-full object-cover" />
+                  <Image
+                    src={img}
+                    alt={`${product.name} miniatura ${idx + 1}`}
+                    fill
+                    sizes="80px"
+                    className="object-cover"
+                  />
                 </button>
               ))}
             </div>
@@ -96,10 +103,13 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
 
           {/* Imagem Principal */}
           <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl bg-[#fafbf9] border border-[#e6e7e4]">
-            <img
+            <Image
               src={images[selectedImage]}
               alt={product.name}
-              className="size-full object-cover object-top"
+              fill
+              priority
+              sizes="(max-width: 768px) 100vw, 55vw"
+              className="object-cover object-top"
             />
             {product.is_new && (
               <span className="absolute top-4 left-4 rounded-full bg-[#1f6b4f] px-3 py-1 text-xs font-bold uppercase tracking-wider text-white shadow-md">
@@ -108,6 +118,7 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
             )}
           </div>
         </div>
+
 
         {/* Informações de Compra e Detalhes */}
         <div className="lg:col-span-5 flex flex-col justify-start">

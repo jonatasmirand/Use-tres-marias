@@ -1,62 +1,79 @@
+import { z } from "zod";
 import { ProductInput, MAX_PRODUCT_IMAGES } from "@/types/catalog";
 
-type ValidationResult<T> = { isValid: boolean; errors: string[]; data: T | null };
+export type ValidationResult<T> = { isValid: boolean; errors: string[]; data: T | null };
 
-function str(value: unknown): string {
-  return typeof value === "string" ? value.trim() : "";
-}
+/** Esquema Zod robusto para validação e sanitização dos dados de entrada de produto */
+export const productInputSchema = z.object({
+  name: z.preprocess(
+    (val) => (typeof val === "string" ? val.trim() : ""),
+    z
+      .string()
+      .min(1, "O nome do produto é obrigatório.")
+      .max(150, "O nome deve ter no máximo 150 caracteres.")
+  ),
+  price: z.preprocess((val) => {
+    if (typeof val === "number") return val;
+    if (typeof val === "string") {
+      const parsed = Number(val.replace(",", "."));
+      return Number.isFinite(parsed) ? parsed : NaN;
+    }
+    return NaN;
+  }, z.number({ message: "Informe um preço válido maior que zero." }).positive("Informe um preço válido maior que zero.")),
+  description: z.preprocess(
+    (val) => (typeof val === "string" ? val.trim() : ""),
+    z.string().default("")
+  ),
+  category_id: z.preprocess(
+    (val) => (typeof val === "string" ? val.trim() : ""),
+    z.string().min(1, "Selecione o tipo de roupa (categoria).")
+  ),
+  images: z.preprocess(
+    (val) => (Array.isArray(val) ? val.filter((item) => typeof item === "string" && item.trim().length > 0) : []),
+    z
+      .array(z.string().trim())
+      .min(1, "Adicione pelo menos uma foto.")
+      .max(MAX_PRODUCT_IMAGES, `Máximo de ${MAX_PRODUCT_IMAGES} fotos por produto.`)
+      .refine(
+        (urls) => urls.every((url) => url.startsWith("http://") || url.startsWith("https://") || url.startsWith("/")),
+        { message: "Uma das fotos tem um endereço inválido." }
+      )
+      .transform((urls) => Array.from(new Set(urls)))
+  ),
+  sizes: z.preprocess(
+    (val) => (Array.isArray(val) ? val.filter((item) => typeof item === "string" && item.trim().length > 0) : []),
+    z
+      .array(z.string().trim())
+      .default([])
+      .transform((sizes) => Array.from(new Set(sizes.map((s) => s.toUpperCase()))))
+  ),
+  is_new: z.preprocess((val) => val === true, z.boolean()).default(false),
+  is_active: z.preprocess((val) => val !== false, z.boolean()).default(true),
+});
 
-function uniqueStrings(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  const out: string[] = [];
-  for (const item of value) {
-    const s = str(item);
-    if (s && !out.includes(s)) out.push(s);
-  }
-  return out;
-}
+export type ValidatedProductInput = z.infer<typeof productInputSchema>;
 
 export function validateProductInput(data: unknown): ValidationResult<ProductInput> {
   if (!data || typeof data !== "object") {
     return { isValid: false, errors: ["Dados do produto inválidos."], data: null };
   }
 
-  const raw = data as Record<string, unknown>;
-  const errors: string[] = [];
-
-  const name = str(raw.name);
-  const description = str(raw.description);
-  const category_id = str(raw.category_id);
-  const price = typeof raw.price === "number" ? raw.price : Number(String(raw.price ?? "").replace(",", "."));
-  const images = uniqueStrings(raw.images);
-  const sizes = uniqueStrings(raw.sizes).map((s) => s.toUpperCase());
-
-  if (!name) errors.push("O nome do produto é obrigatório.");
-  if (name.length > 150) errors.push("O nome deve ter no máximo 150 caracteres.");
-  if (!Number.isFinite(price) || price <= 0) errors.push("Informe um preço válido maior que zero.");
-  if (!category_id) errors.push("Selecione o tipo de roupa (categoria).");
-  if (images.length === 0) errors.push("Adicione pelo menos uma foto.");
-  if (images.length > MAX_PRODUCT_IMAGES) errors.push(`Máximo de ${MAX_PRODUCT_IMAGES} fotos por produto.`);
-  if (images.some((url) => !url.startsWith("http") && !url.startsWith("/"))) {
-    errors.push("Uma das fotos tem um endereço inválido.");
-  }
-
-  if (errors.length > 0) {
-    return { isValid: false, errors, data: null };
+  const result = productInputSchema.safeParse(data);
+  if (!result.success) {
+    const errorMessages = (result.error.issues || []).map((issue) => issue.message);
+    return {
+      isValid: false,
+      errors: Array.from(new Set(errorMessages)),
+      data: null,
+    };
   }
 
   return {
     isValid: true,
     errors: [],
     data: {
-      name,
-      description,
-      category_id,
-      price: Math.round(price * 100) / 100,
-      images,
-      sizes,
-      is_new: raw.is_new === true,
-      is_active: raw.is_active !== false,
+      ...result.data,
+      price: Math.round(result.data.price * 100) / 100,
     },
   };
 }

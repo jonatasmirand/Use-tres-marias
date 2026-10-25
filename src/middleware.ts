@@ -3,7 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 
 // Chave secreta necessária na URL para desbloquear a tela de login.
 // Pode ser alterada no arquivo .env pela variável ADMIN_SECRET_KEY
-const ADMIN_SECRET_KEY = process.env.ADMIN_SECRET_KEY || "tresmarias_acesso_2026";
+// Sem valor padrão: se a variável não existir, a tela de login fica bloqueada.
+const ADMIN_SECRET_KEY = process.env.ADMIN_SECRET_KEY || "";
 const ACCESS_COOKIE_NAME = "tm_admin_access";
 
 export async function middleware(request: NextRequest) {
@@ -42,25 +43,28 @@ export async function middleware(request: NextRequest) {
   // Atualiza e valida a sessão no Supabase
   const { data: { user } } = await supabase.auth.getUser();
 
+  // Somente usuários com app_metadata.role = "admin" têm acesso ao painel
+  const isAdmin = user?.app_metadata?.role === "admin";
+
   const pathname = request.nextUrl.pathname;
   const isAccessingAdmin = pathname.startsWith("/admin");
   const isAccessingAdminApi = pathname.startsWith("/api/admin");
   const isLoginPage = pathname === "/login";
 
-  // 1. Se tentar acessar APIs administrativas sem estar autenticado -> Responde 404 (Not Found)
-  if (isAccessingAdminApi && !user) {
+  // 1. Se tentar acessar APIs administrativas sem ser admin -> Responde 404 (Not Found)
+  if (isAccessingAdminApi && !isAdmin) {
     return NextResponse.json({ error: "Página não encontrada" }, { status: 404 });
   }
 
-  // 2. Se tentar acessar qualquer página /admin sem estar autenticado -> 404 (disfarce total)
-  if (isAccessingAdmin && !user) {
+  // 2. Se tentar acessar qualquer página /admin sem ser admin -> 404 (disfarce total)
+  if (isAccessingAdmin && !isAdmin) {
     return NextResponse.rewrite(new URL("/not-found", request.url), { status: 404 });
   }
 
   // 3. Controle da página de Login:
   if (isLoginPage) {
-    // Se já estiver logado, redireciona direto para o painel
-    if (user) {
+    // Se já estiver logado como admin, redireciona direto para o painel
+    if (isAdmin) {
       return NextResponse.redirect(new URL("/admin", request.url));
     }
 
@@ -70,8 +74,10 @@ export async function middleware(request: NextRequest) {
       request.nextUrl.searchParams.get("key") ||
       request.nextUrl.searchParams.get("token");
 
-    const hasValidKeyInUrl = queryKey === ADMIN_SECRET_KEY;
-    const hasValidAccessCookie = request.cookies.get(ACCESS_COOKIE_NAME)?.value === ADMIN_SECRET_KEY;
+    // Sem chave configurada, nada é aceito (falha fechada)
+    const hasValidKeyInUrl = Boolean(ADMIN_SECRET_KEY) && queryKey === ADMIN_SECRET_KEY;
+    const hasValidAccessCookie =
+      Boolean(ADMIN_SECRET_KEY) && request.cookies.get(ACCESS_COOKIE_NAME)?.value === ADMIN_SECRET_KEY;
 
     // Se forneceu a chave correta: libera o acesso, grava o cookie seguro e limpa a URL
     if (hasValidKeyInUrl) {

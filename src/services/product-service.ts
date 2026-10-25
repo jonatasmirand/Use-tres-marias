@@ -352,7 +352,16 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
   }
 }
 
+function isUuid(str: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+}
+
 export async function getProductById(id: string): Promise<Product | null> {
+  if (!isUuid(id)) {
+    const fallback = FALLBACK_PRODUCTS.find((p) => p.id === id);
+    return fallback || null;
+  }
+
   try {
     const supabase = await createClient();
 
@@ -510,6 +519,10 @@ export async function createProduct(input: ProductInput): Promise<Product> {
 }
 
 export async function updateProduct(id: string, input: Partial<ProductInput>): Promise<Product> {
+  if (!isUuid(id)) {
+    throw new Error("Este item é demonstrativo e não está salvo no banco. Execute o script de seed no Supabase para gerenciar peças reais.");
+  }
+
   const supabase = await createClient();
 
   const updateData: Record<string, any> = {};
@@ -568,6 +581,10 @@ export async function updateProduct(id: string, input: Partial<ProductInput>): P
 }
 
 export async function deleteProduct(id: string): Promise<void> {
+  if (!isUuid(id)) {
+    throw new Error("Este item é demonstrativo e não está salvo no banco. Execute o script de seed no Supabase para gerenciar peças reais.");
+  }
+
   const supabase = await createClient();
   const { error } = await supabase.from("products").delete().eq("id", id);
   if (error) {

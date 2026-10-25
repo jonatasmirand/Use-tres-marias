@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { useCart } from "@/context/CartContext";
 import SearchModal from "@/components/search/SearchModal";
@@ -22,10 +23,38 @@ export default function Header() {
     <>
       {/* Header Principal */}
       <header className="sticky top-0 z-30 border-b border-[#e6e7e4] bg-white">
-        <div className="mx-auto grid h-[82px] max-w-[1240px] grid-cols-[auto_1fr] items-center gap-5 px-6 md:grid-cols-[1fr_auto_1fr]">
-          {/* Menu de Navegação Desktop */}
+        <div className="mx-auto grid h-[82px] max-w-[1240px] grid-cols-[auto_1fr_auto] items-center gap-5 px-6 md:grid-cols-[1fr_auto_1fr]">
+          {/* Botão Hambúrguer Mobile */}
+          <button
+            type="button"
+            aria-label={isMenuOpen ? "Fechar menu" : "Abrir menu"}
+            aria-expanded={isMenuOpen}
+            className="text-2xl text-[#202522] md:hidden focus:outline-none"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+          >
+            {isMenuOpen ? "✕" : "☰"}
+          </button>
+
+          {/* Logo da loja (lateral esquerda) */}
+          <Link
+            href="/"
+            aria-label="Três Marias — página inicial"
+            className="justify-self-center transition hover:opacity-90 md:justify-self-start"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            <Image
+              src="/logo-tres-marias.png"
+              alt="Três Marias"
+              width={1024}
+              height={240}
+              priority
+              className="h-9 w-auto md:h-14"
+            />
+          </Link>
+
+          {/* Menu de Navegação Desktop (centralizado) */}
           <nav aria-label="Navegação principal" className="hidden md:block">
-            <ul className="flex items-center gap-[26px]">
+            <ul className="flex items-center justify-center gap-[26px]">
               {navigationLinks.map((link) => (
                 <li key={link.label}>
                   <Link
@@ -38,27 +67,6 @@ export default function Header() {
               ))}
             </ul>
           </nav>
-
-          {/* Botão Hambúrguer Mobile */}
-          <button
-            type="button"
-            aria-label={isMenuOpen ? "Fechar menu" : "Abrir menu"}
-            aria-expanded={isMenuOpen}
-            className="text-2xl text-[#202522] md:hidden focus:outline-none"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            {isMenuOpen ? "✕" : "☰"}
-          </button>
-
-          {/* Logo Centralizada em Georgia */}
-          <Link
-            href="/"
-            aria-label="useTrêsMarias — página inicial"
-            className="text-center font-serif text-[27px] font-bold tracking-[-0.04em] text-[#202522] transition hover:opacity-95"
-            onClick={() => setIsMenuOpen(false)}
-          >
-            use<span className="text-[#1f6b4f]">Três</span>Marias
-          </Link>
 
           {/* Botões de Ação à Direita (Busca, Conta e Carrinho/Favoritos) */}
           <div className="flex items-center justify-end gap-[18px]">

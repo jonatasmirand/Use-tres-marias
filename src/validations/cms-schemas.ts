@@ -1,3 +1,4 @@
+import { z } from "zod";
 import {
   HeroContent,
   HeroSlide,
@@ -10,7 +11,7 @@ import {
   DEFAULT_HERO_SLIDE,
 } from "@/types/cms";
 
-type ValidationResult<T> = { isValid: boolean; errors: string[]; data: T | null };
+export type ValidationResult<T> = { isValid: boolean; errors: string[]; data: T | null };
 
 function str(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
@@ -26,8 +27,58 @@ function clampInterval(value: unknown): number {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Hero (carrossel)                                                          */
+/*  Hero Schemas & Validação Zod                                              */
 /* -------------------------------------------------------------------------- */
+
+export const heroSlideSchema = z
+  .object({
+    id: z.preprocess((val) => (typeof val === "string" ? val.trim() : ""), z.string().default("")),
+    image_url: z.preprocess(
+      (val) => (typeof val === "string" ? val.trim() : ""),
+      z.string().min(1, "A imagem do slide é obrigatória.")
+    ),
+    mobile_image_url: z.preprocess((val) => (typeof val === "string" ? val.trim() : ""), z.string().default("")),
+    alt_text: z.preprocess((val) => (typeof val === "string" ? val.trim() : ""), z.string().default("")),
+    image_fit: z.preprocess(
+      (val) => (val === "contain" ? "contain" : "cover"),
+      z.enum(["cover", "contain"])
+    ).default("cover"),
+    eyebrow: z.preprocess((val) => (typeof val === "string" ? val.trim() : ""), z.string().default("")),
+    title: z.preprocess((val) => (typeof val === "string" ? val.trim() : ""), z.string().default("")),
+    description: z.preprocess((val) => (typeof val === "string" ? val.trim() : ""), z.string().default("")),
+    button_text: z.preprocess((val) => (typeof val === "string" ? val.trim() : ""), z.string().default("")),
+    button_url: z.preprocess(
+      (val) => (typeof val === "string" ? val.trim() : ""),
+      z.string().default("").refine((url) => !url || url.startsWith("/") || url.startsWith("http"), {
+        message: "O link do botão deve começar com '/' (interno) ou 'http' (externo).",
+      })
+    ),
+  })
+  .superRefine((slide, ctx) => {
+    if (slide.button_text && !slide.button_url) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "O slide tem texto de botão, mas está sem link.",
+      });
+    }
+  });
+
+export const heroContentSchema = z.object({
+  interval_seconds: z.preprocess(
+    (val) => {
+      const n = typeof val === "number" && Number.isFinite(val) ? Math.round(val) : 5;
+      return Math.min(HERO_INTERVAL_MAX, Math.max(HERO_INTERVAL_MIN, n));
+    },
+    z.number().int().min(HERO_INTERVAL_MIN).max(HERO_INTERVAL_MAX).default(5)
+  ),
+  slides: z.preprocess(
+    (val) => (Array.isArray(val) ? val.filter((s) => s && typeof s === "object") : []),
+    z
+      .array(heroSlideSchema)
+      .min(1, "Adicione pelo menos um slide ao carrossel.")
+      .max(HERO_MAX_SLIDES, `O carrossel aceita no máximo ${HERO_MAX_SLIDES} slides.`)
+  ),
+});
 
 /**
  * Converte qualquer conteúdo de Hero salvo (formato novo ou antigo) para o
@@ -70,40 +121,18 @@ export function validateHeroContent(data: unknown): ValidationResult<HeroContent
     return { isValid: false, errors: ["O conteúdo do carrossel é obrigatório."], data: null };
   }
 
-  const content = normalizeHeroContent(data);
-  const errors: string[] = [];
-
-  if (content.slides.length === 0) {
-    errors.push("Adicione pelo menos um slide ao carrossel.");
-  }
-
-  if (content.slides.length > HERO_MAX_SLIDES) {
-    errors.push(`O carrossel aceita no máximo ${HERO_MAX_SLIDES} slides.`);
-  }
-
-  content.slides.forEach((slide, idx) => {
-    const n = idx + 1;
-    if (!slide.image_url) {
-      errors.push(`O slide ${n} precisa de uma imagem.`);
-    }
-    if (!isValidLink(slide.button_url || "")) {
-      errors.push(`O link do botão do slide ${n} deve começar com '/' (interno) ou 'http' (externo).`);
-    }
-    if (slide.button_text && !slide.button_url) {
-      errors.push(`O slide ${n} tem texto de botão, mas está sem link.`);
-    }
-  });
-
-  if (errors.length > 0) {
-    return { isValid: false, errors, data: null };
+  const parsed = heroContentSchema.safeParse(data);
+  if (!parsed.success) {
+    const errorMessages = (parsed.error.issues || []).map((issue) => issue.message);
+    return { isValid: false, errors: Array.from(new Set(errorMessages)), data: null };
   }
 
   return {
     isValid: true,
     errors: [],
     data: {
-      interval_seconds: content.interval_seconds,
-      slides: content.slides.map((s, idx) => ({
+      interval_seconds: parsed.data.interval_seconds,
+      slides: parsed.data.slides.map((s, idx) => ({
         ...s,
         alt_text: s.alt_text || s.title || `Slide ${idx + 1} – Três Marias`,
         mobile_image_url: s.mobile_image_url || "",
@@ -113,8 +142,37 @@ export function validateHeroContent(data: unknown): ValidationResult<HeroContent
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Vitrines (Novidades / Conjuntos)                                          */
+/*  Vitrines (Novidades / Conjuntos) Schemas & Validação Zod                  */
 /* -------------------------------------------------------------------------- */
+
+export const showcaseContentSchema = z.object({
+  section_badge: z.preprocess((val) => (typeof val === "string" ? val.trim() : ""), z.string().default("")),
+  section_headline: z.preprocess(
+    (val) => (typeof val === "string" ? val.trim() : ""),
+    z.string().min(1, "O título da vitrine é obrigatório.")
+  ),
+  section_subheadline: z.preprocess((val) => (typeof val === "string" ? val.trim() : ""), z.string().default("")),
+  view_all_text: z.preprocess(
+    (val) => (typeof val === "string" && val.trim() ? val.trim() : "Ver todos"),
+    z.string().default("Ver todos")
+  ),
+  view_all_url: z.preprocess(
+    (val) => {
+      const s = typeof val === "string" ? val.trim().replace(/^\/#/, "/") : "";
+      return s || "/novidades";
+    },
+    z.string().refine((url) => !url || url.startsWith("/") || url.startsWith("http"), {
+      message: "O link 'ver todos' deve começar com '/' ou 'http'.",
+    })
+  ),
+  max_items: z.preprocess(
+    (val) => {
+      const n = typeof val === "number" && Number.isFinite(val) ? Math.round(val) : 8;
+      return Math.min(24, Math.max(1, n));
+    },
+    z.number().int().min(1).max(24).default(8)
+  ),
+});
 
 export function normalizeShowcaseContent(raw: unknown, fallbackUrl = "/novidades"): ShowcaseContent {
   const obj = (raw && typeof raw === "object" ? raw : {}) as Partial<ShowcaseContent>;
@@ -125,7 +183,6 @@ export function normalizeShowcaseContent(raw: unknown, fallbackUrl = "/novidades
     section_headline: str(obj.section_headline),
     section_subheadline: str(obj.section_subheadline),
     view_all_text: str(obj.view_all_text) || "Ver todos",
-    // Links antigos com âncora (/#vestidos) passam a apontar para a página da categoria
     view_all_url: (str(obj.view_all_url) || fallbackUrl).replace(/^\/#/, "/"),
     max_items: Math.min(24, Math.max(1, Math.round(max))),
   };
@@ -136,21 +193,14 @@ export function validateShowcaseContent(data: unknown): ValidationResult<Showcas
     return { isValid: false, errors: ["O conteúdo da vitrine é obrigatório."], data: null };
   }
 
-  const content = normalizeShowcaseContent(data);
-  const errors: string[] = [];
-
-  if (!content.section_headline) {
-    errors.push("O título da vitrine é obrigatório.");
-  }
-  if (!isValidLink(content.view_all_url || "")) {
-    errors.push("O link 'ver todos' deve começar com '/' ou 'http'.");
+  const parsed = showcaseContentSchema.safeParse(data);
+  if (!parsed.success) {
+    const errorMessages = (parsed.error.issues || []).map((issue) => issue.message);
+    return { isValid: false, errors: Array.from(new Set(errorMessages)), data: null };
   }
 
-  if (errors.length > 0) {
-    return { isValid: false, errors, data: null };
-  }
-
-  return { isValid: true, errors: [], data: content };
+  return { isValid: true, errors: [], data: parsed.data };
 }
 
 export const validateCardsGridContent = validateShowcaseContent;
+

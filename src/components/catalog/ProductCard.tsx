@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Product } from "@/types/catalog";
 import { useCart } from "@/context/CartContext";
 
@@ -33,11 +34,12 @@ export default function ProductCard({ product }: ProductCardProps) {
         aria-label={`Ver detalhes de ${product.name}`}
         className="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-[#f4f5f2] border border-[#e6e7e4]"
       >
-        <img
+         <Image
           src={isHovered && secondaryImage ? secondaryImage : primaryImage}
           alt={product.name}
-          className="size-full object-cover object-top transition-all duration-500 ease-out group-hover:scale-105"
-          loading="lazy"
+          fill
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+          className="object-cover object-top transition-all duration-500 ease-out group-hover:scale-105"
         />
 
         {/* Badge de Novidade */}
