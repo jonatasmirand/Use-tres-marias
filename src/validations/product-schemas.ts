@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { ProductInput, MAX_PRODUCT_IMAGES } from "@/types/catalog";
 
+export const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export type ValidationResult<T> = { isValid: boolean; errors: string[]; data: T | null };
 
 /** Esquema Zod robusto para validação e sanitização dos dados de entrada de produto */
@@ -26,7 +28,10 @@ export const productInputSchema = z.object({
   ),
   category_id: z.preprocess(
     (val) => (typeof val === "string" ? val.trim() : ""),
-    z.string().min(1, "Selecione o tipo de roupa (categoria).")
+    z
+      .string()
+      .min(1, "Selecione o tipo de roupa (categoria).")
+      .regex(UUID_REGEX, "Identificador de categoria inválido (deve ser um UUID válido).")
   ),
   images: z.preprocess(
     (val) => (Array.isArray(val) ? val.filter((item) => typeof item === "string" && item.trim().length > 0) : []),
@@ -53,6 +58,9 @@ export const productInputSchema = z.object({
 
 export type ValidatedProductInput = z.infer<typeof productInputSchema>;
 
+/** Esquema para atualização de produtos (campos opcionais, preservando regras de tipos quando informados) */
+export const productUpdateSchema = productInputSchema.partial();
+
 export function validateProductInput(data: unknown): ValidationResult<ProductInput> {
   if (!data || typeof data !== "object") {
     return { isValid: false, errors: ["Dados do produto inválidos."], data: null };
@@ -74,6 +82,31 @@ export function validateProductInput(data: unknown): ValidationResult<ProductInp
     data: {
       ...result.data,
       price: Math.round(result.data.price * 100) / 100,
+    },
+  };
+}
+
+export function validateProductUpdate(data: unknown): ValidationResult<Partial<ProductInput>> {
+  if (!data || typeof data !== "object") {
+    return { isValid: false, errors: ["Dados de atualização inválidos."], data: null };
+  }
+
+  const result = productUpdateSchema.safeParse(data);
+  if (!result.success) {
+    const errorMessages = (result.error.issues || []).map((issue) => issue.message);
+    return {
+      isValid: false,
+      errors: Array.from(new Set(errorMessages)),
+      data: null,
+    };
+  }
+
+  return {
+    isValid: true,
+    errors: [],
+    data: {
+      ...result.data,
+      ...(result.data.price !== undefined ? { price: Math.round(result.data.price * 100) / 100 } : {}),
     },
   };
 }

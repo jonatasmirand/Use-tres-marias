@@ -12,7 +12,6 @@ interface ProductListViewProps {
 
 export default function ProductListView({
   initialProducts,
-  categories,
   initialCategorySlug = "todos",
 }: ProductListViewProps) {
   const [products, setProducts] = useState<Product[]>(initialProducts);

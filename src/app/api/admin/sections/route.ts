@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdminSession } from "@/services/auth-service";
 import { getAdminPageSections, reorderSections } from "@/services/cms-service";
-import { ReorderSectionItem } from "@/types/cms";
+import { validateReorderSectionsPayload } from "@/validations/cms-schemas";
 
 export async function GET(request: Request) {
   try {
@@ -25,11 +25,15 @@ export async function PUT(request: Request) {
     await requireAdminSession();
     const body = await request.json();
 
-    if (!Array.isArray(body?.items)) {
-      return NextResponse.json({ success: false, error: "Formato inválido. 'items' deve ser um array." }, { status: 400 });
+    const validation = validateReorderSectionsPayload(body);
+    if (!validation.isValid) {
+      return NextResponse.json(
+        { success: false, errors: validation.errors, error: validation.errors[0] },
+        { status: 400 }
+      );
     }
 
-    await reorderSections(body.items as ReorderSectionItem[]);
+    await reorderSections(validation.data!);
     return NextResponse.json({ success: true, message: "Ordem das seções atualizada com sucesso." }, { status: 200 });
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") {
@@ -39,3 +43,4 @@ export async function PUT(request: Request) {
     return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
+

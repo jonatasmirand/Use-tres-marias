@@ -20,10 +20,10 @@ export default function Footer() {
             Atendimento
           </h4>
           <div className="space-y-1">
-            <Link href="/#atendimento" className="block text-[12px] leading-[1.8] text-[#aeb9b3] hover:text-white transition">
+            <Link href="/contato" className="block text-[12px] leading-[1.8] text-[#aeb9b3] hover:text-white transition">
               Fale conosco
             </Link>
-            <Link href="/#trocas" className="block text-[12px] leading-[1.8] text-[#aeb9b3] hover:text-white transition">
+            <Link href="/contato" className="block text-[12px] leading-[1.8] text-[#aeb9b3] hover:text-white transition">
               Trocas e devoluções
             </Link>
           </div>
@@ -35,7 +35,7 @@ export default function Footer() {
             Institucional
           </h4>
           <div className="space-y-1">
-            <Link href="/#sobre" className="block text-[12px] leading-[1.8] text-[#aeb9b3] hover:text-white transition">
+            <Link href="/sobre" className="block text-[12px] leading-[1.8] text-[#aeb9b3] hover:text-white transition">
               Sobre nós
             </Link> 
           </div>
@@ -47,8 +47,8 @@ export default function Footer() {
             Redes sociais
           </h4>
           <div className="space-y-1">
-            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="block text-[12px] leading-[1.8] text-[#aeb9b3] hover:text-white transition">
-              Instagram
+            <a href="https://instagram.com/usetresmarias" target="_blank" rel="noopener noreferrer" className="block text-[12px] leading-[1.8] text-[#aeb9b3] hover:text-white transition">
+              Instagram (@usetresmarias)
             </a>
             <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer" className="block text-[12px] leading-[1.8] text-[#aeb9b3] hover:text-white transition">
               TikTok

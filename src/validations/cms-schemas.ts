@@ -4,6 +4,7 @@ import {
   HeroSlide,
   LegacyHeroContent,
   ShowcaseContent,
+  ReorderSectionItem,
   HERO_INTERVAL_MAX,
   HERO_INTERVAL_MIN,
   HERO_MAX_SLIDES,
@@ -11,14 +12,12 @@ import {
   DEFAULT_HERO_SLIDE,
 } from "@/types/cms";
 
+export const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export type ValidationResult<T> = { isValid: boolean; errors: string[]; data: T | null };
 
 function str(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
-}
-
-function isValidLink(url: string): boolean {
-  return url === "" || url.startsWith("/") || url.startsWith("http");
 }
 
 function clampInterval(value: unknown): number {
@@ -203,4 +202,73 @@ export function validateShowcaseContent(data: unknown): ValidationResult<Showcas
 }
 
 export const validateCardsGridContent = validateShowcaseContent;
+
+/* -------------------------------------------------------------------------- */
+/*  Reordenação de Seções                                                     */
+/* -------------------------------------------------------------------------- */
+
+export const reorderSectionItemSchema = z.object({
+  id: z
+    .string({ message: "O ID da seção é obrigatório." })
+    .trim()
+    .regex(UUID_REGEX, "ID de seção inválido (deve ser um UUID válido)."),
+  position: z
+    .number({ message: "A posição deve ser um número inteiro." })
+    .int("A posição deve ser um número inteiro.")
+    .min(0, "A posição não pode ser negativa."),
+});
+
+export const reorderSectionsPayloadSchema = z.object({
+  items: z
+    .array(reorderSectionItemSchema, { message: "Formato inválido. 'items' deve ser um array." })
+    .min(1, "A lista de seções para reordenação deve conter pelo menos um item.")
+    .superRefine((items, ctx) => {
+      const seenIds = new Set<string>();
+      const seenPositions = new Set<number>();
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (seenIds.has(item.id)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `ID de seção duplicado na reordenação: ${item.id}`,
+            path: [i, "id"],
+          });
+        }
+        seenIds.add(item.id);
+
+        if (seenPositions.has(item.position)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Posição duplicada na reordenação: ${item.position}`,
+            path: [i, "position"],
+          });
+        }
+        seenPositions.add(item.position);
+      }
+    }),
+});
+
+export function validateReorderSectionsPayload(data: unknown): ValidationResult<ReorderSectionItem[]> {
+  if (!data || typeof data !== "object") {
+    return { isValid: false, errors: ["Payload de reordenação inválido."], data: null };
+  }
+
+  const result = reorderSectionsPayloadSchema.safeParse(data);
+  if (!result.success) {
+    const errorMessages = (result.error.issues || []).map((issue) => issue.message);
+    return {
+      isValid: false,
+      errors: Array.from(new Set(errorMessages)),
+      data: null,
+    };
+  }
+
+  return {
+    isValid: true,
+    errors: [],
+    data: result.data.items,
+  };
+}
+
 

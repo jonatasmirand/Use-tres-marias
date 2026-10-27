@@ -15,12 +15,16 @@ export async function GET(request: NextRequest) {
       count: products.length,
       products,
     });
-  } catch (error: any) {
-    console.error("Erro na busca de produtos:", error);
+  } catch (error: unknown) {
+    if (error && typeof error === "object" && "digest" in error) {
+      throw error;
+    }
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Erro na busca de produtos:", message);
     return NextResponse.json(
       {
         success: false,
-        error: error?.message || String(error),
+        error: message,
         products: [],
       },
       { status: 500 }

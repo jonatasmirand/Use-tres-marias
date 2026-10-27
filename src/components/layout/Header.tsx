@@ -117,6 +117,24 @@ export default function Header() {
                   </Link>
                 </li>
               ))}
+              <li className="pt-2 mt-1 border-t border-[#e6e7e4]">
+                <Link
+                  href="/sobre"
+                  className="block text-xs uppercase tracking-[0.06em] text-[#5f6863] py-1.5 transition hover:text-[#1f6b4f]"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Sobre Nós
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/contato"
+                  className="block text-xs uppercase tracking-[0.06em] text-[#5f6863] py-1.5 transition hover:text-[#1f6b4f]"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Contato
+                </Link>
+              </li>
             </ul>
           </nav>
         )}

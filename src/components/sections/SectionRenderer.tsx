@@ -1,4 +1,4 @@
-import { CmsSection, HeroContent, ShowcaseContent } from "@/types/cms";
+import { CmsSection } from "@/types/cms";
 import { Product } from "@/types/catalog";
 import HeroCarousel from "./HeroCarousel";
 import ShowcaseSection from "./ShowcaseSection";

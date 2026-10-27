@@ -425,6 +425,9 @@ export async function reorderSections(items: ReorderSectionItem[]): Promise<void
   const supabase = await createClient();
 
   for (const item of items) {
+    if (!isUuid(item.id)) {
+      throw new Error("ID de seção inválido: " + item.id);
+    }
     await supabase
       .from("cms_sections")
       .update({ position: item.position })

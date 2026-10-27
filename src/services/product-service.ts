@@ -239,20 +239,35 @@ export async function getProducts(filter: GetProductsFilter = {}): Promise<Produ
       return filterFallbackProducts(filter);
     }
 
+    interface ProductDatabaseRow {
+      id: string;
+      name: string;
+      slug?: string | null;
+      description?: string | null;
+      price?: number | string | null;
+      images?: string[] | null;
+      sizes?: string[] | null;
+      is_new?: boolean | null;
+      is_active?: boolean | null;
+      position?: number | null;
+      category_id?: string | null;
+      categories?: Category | Category[] | null;
+    }
+
     // Normalização de dados recebidos do Supabase
-    const list: Product[] = (data as any[]).map((row) => {
+    const list: Product[] = (data as unknown as ProductDatabaseRow[]).map((row) => {
       const cat = Array.isArray(row.categories)
-        ? row.categories[0]
-        : row.categories || null;
+        ? (row.categories[0] as Category | null)
+        : (row.categories as Category | null) || null;
 
       const imgs = Array.isArray(row.images) && row.images.length > 0
         ? row.images
         : [];
 
       return {
-        id: row.id,
-        name: row.name,
-        slug: row.slug || slugify(row.name),
+        id: String(row.id),
+        name: String(row.name),
+        slug: row.slug || slugify(String(row.name)),
         description: row.description || "",
         price: Number(row.price) || 0,
         images: imgs,
@@ -423,7 +438,8 @@ export async function getCategories(): Promise<Category[]> {
     const supabase = publicSupabase;
     const { data, error } = await supabase
       .from("categories")
-      .select("id, name, slug")
+      .select("id, name, slug, description, is_active")
+      .eq("is_active", true)
       .order("name", { ascending: true });
 
     if (error || !data || data.length === 0) {
@@ -431,6 +447,7 @@ export async function getCategories(): Promise<Category[]> {
         id: `cat-${c.slug}`,
         name: c.label,
         slug: c.slug,
+        is_active: true,
       }));
     }
 
@@ -440,8 +457,45 @@ export async function getCategories(): Promise<Category[]> {
       id: `cat-${c.slug}`,
       name: c.label,
       slug: c.slug,
+      is_active: true,
     }));
   }
+}
+
+export async function getCategoryBySlug(slug: string): Promise<Category | null> {
+  const normSlug = slug.toLowerCase().trim();
+  if (!normSlug) return null;
+
+  try {
+    const supabase = publicSupabase;
+    const { data, error } = await supabase
+      .from("categories")
+      .select("id, name, slug, description, is_active")
+      .eq("slug", normSlug)
+      .maybeSingle();
+
+    if (!error && data) {
+      if (data.is_active === false) {
+        return null;
+      }
+      return data as Category;
+    }
+  } catch {
+    // Falha de rede ou indisponibilidade do banco: tenta o fallback predefinido
+  }
+
+  // Fallback para categorias predefinidas do catálogo
+  const fallback = CATALOG_CATEGORIES.find((c) => c.slug === normSlug);
+  if (fallback) {
+    return {
+      id: `cat-${fallback.slug}`,
+      name: fallback.label,
+      slug: fallback.slug,
+      is_active: true,
+    };
+  }
+
+  return null;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -449,6 +503,10 @@ export async function getCategories(): Promise<Category[]> {
 /* -------------------------------------------------------------------------- */
 
 export async function createProduct(input: ProductInput): Promise<Product> {
+  if (!isUuid(input.category_id)) {
+    throw new Error("Identificador de categoria inválido (deve ser um UUID válido).");
+  }
+
   const supabase = await createClient();
   let baseSlug = slugify(input.name);
   if (!baseSlug) baseSlug = "produto";
@@ -523,9 +581,13 @@ export async function updateProduct(id: string, input: Partial<ProductInput>): P
     throw new Error("Este item é demonstrativo e não está salvo no banco. Execute o script de seed no Supabase para gerenciar peças reais.");
   }
 
+  if (input.category_id !== undefined && !isUuid(input.category_id)) {
+    throw new Error("Identificador de categoria inválido (deve ser um UUID válido).");
+  }
+
   const supabase = await createClient();
 
-  const updateData: Record<string, any> = {};
+  const updateData: Record<string, unknown> = {};
   if (input.name !== undefined) updateData.name = input.name;
   if (input.description !== undefined) updateData.description = input.description;
   if (input.price !== undefined) updateData.price = input.price;

@@ -1,11 +1,19 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getAdminSession } from "@/services/auth-service";
 
 interface AdminLayoutProps {
   children: ReactNode;
 }
 
-export default function AdminLayout({ children }: AdminLayoutProps) {
+export default async function AdminLayout({ children }: AdminLayoutProps) {
+  const session = await getAdminSession();
+
+  if (!session) {
+    redirect("/login");
+  }
+
   return (
     <div className="flex min-h-screen bg-[#fafbf9] text-[#202522]">
       {/* Barra Lateral / Sidebar para Desktop */}
@@ -112,7 +120,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold text-[#202522]">Painel Admin</p>
-              <p className="text-[11px] text-[#7f8d85]">Use Três Marias</p>
+              <p className="max-w-[140px] truncate text-[11px] text-[#7f8d85]" title={session.email}>
+                {session.email || "Use Três Marias"}
+              </p>
             </div>
             <Link
               href="/login"
