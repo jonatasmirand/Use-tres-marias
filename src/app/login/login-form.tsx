@@ -2,30 +2,38 @@
 
 import { useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { createAuthClient } from "@/lib/supabase/auth-client";
 
-function getAuthErrorMessage(code: string | undefined) {
-  switch (code) {
-    case "invalid_credentials":
-      return "Credenciais inválidas. Verifique o e-mail administrativo e a senha.";
-    case "email_not_confirmed":
-      return "E-mail não confirmado. Verifique a caixa de entrada da sua conta.";
-    case "over_request_rate_limit":
-      return "Muitas tentativas em sequência. Aguarde alguns minutos por segurança.";
-    default:
-      return "Não foi possível validar o acesso. Verifique suas credenciais administrativas e tente novamente.";
+function getAuthErrorMessage(code: string | undefined, message: string | undefined): string {
+  if (code === "invalid_credentials" || code === "invalid_grant") {
+    return "E-mail ou senha incorretos. Por favor, confira seus dados e tente novamente.";
   }
+  if (code === "email_provider_disabled" || message?.toLowerCase().includes("email logins are disabled")) {
+    return "O login por e-mail está desativado no painel do Supabase (Authentication > Providers > Email). Ative-o para permitir o acesso.";
+  }
+  if (code === "email_not_confirmed") {
+    return "E-mail ainda não confirmado. Verifique a caixa de entrada da sua conta.";
+  }
+  if (code === "over_request_rate_limit") {
+    return "Muitas tentativas em sequência. Por segurança, aguarde alguns minutos.";
+  }
+  return message || "Não foi possível validar o acesso. Verifique suas credenciais e tente novamente.";
 }
 
 export default function LoginForm() {
-  const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextUrl = searchParams.get("next") || "";
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+
   const emailInputRef = useRef<HTMLInputElement>(null);
   const submissionInProgress = useRef(false);
 
@@ -38,23 +46,24 @@ export default function LoginForm() {
 
     setErrorMessage("");
     setSuccessMessage("");
+    setResetSent(false);
 
     const normalizedEmail = email.trim();
 
     if (!normalizedEmail) {
-      setErrorMessage("Informe o e-mail de administrador.");
+      setErrorMessage("Informe seu e-mail cadastrado.");
       emailInputRef.current?.focus();
       return;
     }
 
-    if (emailInputRef.current?.validity.typeMismatch) {
+    if (emailInputRef.current?.validity.typeMismatch || !normalizedEmail.includes("@")) {
       setErrorMessage("Informe um formato de e-mail válido.");
-      emailInputRef.current.focus();
+      emailInputRef.current?.focus();
       return;
     }
 
     if (!password) {
-      setErrorMessage("Informe a senha de acesso.");
+      setErrorMessage("Informe sua senha de acesso.");
       return;
     }
 
@@ -69,7 +78,7 @@ export default function LoginForm() {
       });
 
       if (error) {
-        setErrorMessage(getAuthErrorMessage(error.code));
+        setErrorMessage(getAuthErrorMessage(error.code, error.message));
         return;
       }
 
@@ -80,13 +89,29 @@ export default function LoginForm() {
         return;
       }
 
-      setPassword("");
-      setSuccessMessage("Autenticação realizada com sucesso. Redirecionando para o painel...");
+      // IDENTIFICAÇÃO DE INSTÂNCIA: Admin vs Cliente
+      const userRole = data.user.app_metadata?.role;
+      const isAdmin = userRole === "admin";
 
-      setTimeout(() => {
-        router.push("/admin");
-        router.refresh();
-      }, 900);
+      if (isAdmin) {
+        setSuccessMessage("Acesso administrativo confirmado. Entrando no painel...");
+        setTimeout(() => {
+          window.location.href = "/admin";
+        }, 700);
+      } else {
+        const destination =
+          nextUrl &&
+          nextUrl.startsWith("/") &&
+          !nextUrl.startsWith("//") &&
+          !nextUrl.startsWith("/conta")
+            ? nextUrl
+            : "/cliente";
+
+        setSuccessMessage("Login realizado com sucesso! Redirecionando...");
+        setTimeout(() => {
+          window.location.href = destination;
+        }, 700);
+      }
     } catch {
       setErrorMessage(
         "Falha na comunicação com o servidor de autenticação. Verifique sua conexão e tente novamente."
@@ -97,14 +122,44 @@ export default function LoginForm() {
     }
   }
 
+  const handleForgotPassword = async () => {
+    const cleanEmail = email.trim();
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      setErrorMessage("Digite seu e-mail no campo acima para receber as instruções de recuperação.");
+      emailInputRef.current?.focus();
+      return;
+    }
+
+    setIsResetting(true);
+    setErrorMessage("");
+
+    try {
+      const supabase = createAuthClient();
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+        redirectTo: `${origin}/redefinir-senha`,
+      });
+
+      if (error) {
+        setErrorMessage(error.message || "Erro ao solicitar recuperação de senha.");
+      } else {
+        setResetSent(true);
+      }
+    } catch {
+      setErrorMessage("Não foi possível enviar o e-mail de recuperação.");
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center bg-[#fafbf9] px-4 py-12 text-[#202522]">
-      {/* Detalhe de fundo suave com as cores da marca */}
+      {/* Detalhe de fundo suave */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
       >
-        <div className="absolute top-0 left-1/2 h-[420px] w-[680px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#eaf3ee]/60 blur-3xl" />
+        <div className="absolute top-0 left-1/2 h-[480px] w-[720px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#eaf3ee]/70 blur-3xl" />
       </div>
 
       <div className="w-full max-w-[440px]">
@@ -112,46 +167,35 @@ export default function LoginForm() {
         <div className="mb-6 text-center">
           <Link
             aria-label="Use Três Marias - Página inicial"
-            className="inline-block font-serif text-[28px] font-bold tracking-[-0.04em] text-[#202522] transition hover:opacity-90 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1f6b4f]"
+            className="inline-block font-serif text-[28px] font-bold tracking-tight text-[#202522] transition hover:opacity-90"
             href="/"
           >
             use<span className="text-[#1f6b4f]">Três</span>Marias
           </Link>
         </div>
 
-        {/* Card do formulário de login */}
+        {/* Card do formulário de login unificado */}
         <section
           aria-labelledby="login-title"
           className="rounded-2xl border border-[#e6e7e4] bg-white p-7 shadow-[0_8px_30px_rgb(32,37,34,0.04)] sm:p-9"
         >
-          <header className="mb-7 text-center">
-            {/* Badge de Acesso Restrito para Admins */}
-            <div className="mb-3.5 inline-flex items-center gap-1.5 rounded-full border border-[#d2e5db] bg-[#eaf3ee] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#1f6b4f]">
-              <svg
-                aria-hidden="true"
-                className="size-3.5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                />
-              </svg>
-              <span>Acesso Administrativo</span>
-            </div>
+          <header className="mb-6 text-center">
+            {nextUrl.includes("checkout") ? (
+              <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-[#d2e5db] bg-[#eaf3ee] px-3 py-1 text-[11px] font-semibold text-[#1f6b4f]">
+                <span>🛍️ Finalização da Compra</span>
+              </div>
+            ) : null}
 
             <h1
               id="login-title"
               className="font-serif text-[24px] font-bold tracking-tight text-[#202522]"
             >
-              Entrar no Painel
+              Acessar Conta
             </h1>
             <p className="mt-1.5 text-xs leading-relaxed text-[#5f6863]">
-              Área restrita exclusivamente a administradores autorizados.
+              {nextUrl.includes("checkout")
+                ? "Entre na sua conta para vincular o pedido com segurança."
+                : "Acesse para acompanhar seus pedidos ou gerenciar a loja."}
             </p>
           </header>
 
@@ -162,7 +206,7 @@ export default function LoginForm() {
                 className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.06em] text-[#202522]"
                 htmlFor="email"
               >
-                E-mail Administrativo
+                E-mail
               </label>
               <input
                 ref={emailInputRef}
@@ -172,7 +216,7 @@ export default function LoginForm() {
                 id="email"
                 name="email"
                 onChange={(event) => setEmail(event.target.value)}
-                placeholder="admin@usetresmarias.com.br"
+                placeholder="seuemail@exemplo.com"
                 required
                 type="email"
                 value={email}
@@ -188,6 +232,14 @@ export default function LoginForm() {
                 >
                   Senha de Acesso
                 </label>
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  disabled={isResetting}
+                  className="text-[11px] font-medium text-[#1f6b4f] hover:underline"
+                >
+                  {isResetting ? "Enviando..." : "Esqueceu a senha?"}
+                </button>
               </div>
 
               <div className="relative">
@@ -250,6 +302,13 @@ export default function LoginForm() {
               </div>
             </div>
 
+            {/* Alerta de Link de Recuperação */}
+            {resetSent && (
+              <div className="rounded-xl border border-blue-200 bg-blue-50/90 p-3 text-xs text-blue-800">
+                Instruções para redefinir sua senha foram enviadas para o seu e-mail, caso ele esteja cadastrado.
+              </div>
+            )}
+
             {/* Mensagem de Erro */}
             {errorMessage && (
               <div
@@ -257,20 +316,7 @@ export default function LoginForm() {
                 className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50/80 p-3 text-xs text-red-800"
                 role="alert"
               >
-                <svg
-                  aria-hidden="true"
-                  className="mt-0.5 size-4 shrink-0 text-red-600"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                  />
-                </svg>
+                <span className="shrink-0 text-red-600">⚠️</span>
                 <span>{errorMessage}</span>
               </div>
             )}
@@ -282,20 +328,7 @@ export default function LoginForm() {
                 className="flex items-start gap-2.5 rounded-xl border border-[#d2e5db] bg-[#eaf3ee] p-3 text-xs text-[#1f6b4f]"
                 role="status"
               >
-                <svg
-                  aria-hidden="true"
-                  className="mt-0.5 size-4 shrink-0 text-[#1f6b4f]"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
+                <span>✓</span>
                 <span>{successMessage}</span>
               </div>
             )}
@@ -303,44 +336,31 @@ export default function LoginForm() {
             {/* Botão de Entrar */}
             <button
               aria-busy={isSubmitting}
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-[#1f6b4f] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#18563f] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f6b4f] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-[#1f6b4f] px-4 py-3 text-xs font-bold uppercase tracking-wider text-white shadow-sm transition hover:bg-[#18563f] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f6b4f] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70 cursor-pointer"
               disabled={isSubmitting}
               type="submit"
             >
               {isSubmitting ? (
                 <>
-                  <svg
-                    aria-hidden="true"
-                    className="size-4 animate-spin text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                      fill="currentColor"
-                    />
-                  </svg>
-                  <span>Autenticando...</span>
+                  <span className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  <span>Validando acesso...</span>
                 </>
               ) : (
-                <span>Acessar Painel</span>
+                <span>Entrar na Conta</span>
               )}
             </button>
           </form>
 
-          {/* Aviso de segurança e aviso de acesso apenas para administradores */}
+          {/* Link para quem não tem cadastro */}
           <div className="mt-6 border-t border-[#f0f2f0] pt-4 text-center">
-            <p className="text-[11px] leading-relaxed text-[#7f8d85]">
-              🔒 Ambiente seguro monitorado. Somente administradores autorizados têm permissão para entrar.
+            <p className="text-xs text-[#5f6863]">
+              Ainda não tem conta de cliente?{" "}
+              <Link
+                href={`/cadastro${nextUrl ? `?next=${encodeURIComponent(nextUrl)}` : ""}`}
+                className="font-bold text-[#1f6b4f] hover:underline"
+              >
+                Cadastre-se gratuitamente
+              </Link>
             </p>
           </div>
         </section>
@@ -348,11 +368,11 @@ export default function LoginForm() {
         {/* Link para retornar à loja */}
         <div className="mt-6 text-center">
           <Link
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-[#5f6863] transition hover:text-[#1f6b4f] focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f6b4f]"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-[#5f6863] transition hover:text-[#1f6b4f]"
             href="/"
           >
-            <span aria-hidden="true">←</span>
-            <span>Voltar para a loja Use Três Marias</span>
+            <span>←</span>
+            <span>Voltar para a vitrine Use Três Marias</span>
           </Link>
         </div>
       </div>

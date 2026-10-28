@@ -1,11 +1,20 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// Chave secreta necessária na URL para desbloquear a tela de login.
-// Pode ser alterada no arquivo .env pela variável ADMIN_SECRET_KEY
-// Sem valor padrão: se a variável não existir, a tela de login fica bloqueada.
 const ADMIN_SECRET_KEY = process.env.ADMIN_SECRET_KEY || "";
 const ACCESS_COOKIE_NAME = "tm_admin_access";
+
+function sanitizeRedirectUrl(url: string | null, fallback: string): string {
+  if (!url) return fallback;
+  if (!url.startsWith("/") || url.startsWith("//") || url.startsWith("/\\")) {
+    return fallback;
+  }
+  // Não permitir redirecionamentos para rotas extintas
+  if (url === "/conta" || url.startsWith("/conta/")) {
+    return fallback;
+  }
+  return url;
+}
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
@@ -13,6 +22,14 @@ export async function middleware(request: NextRequest) {
       headers: request.headers,
     },
   });
+
+  const pathname = request.nextUrl.pathname;
+
+  // 1. POLÍTICA DE DESCONTINUAÇÃO DAS ROTAS ANTIGAS:
+  // /conta e /conta/* respondem com 404 real (Not Found)
+  if (pathname === "/conta" || pathname.startsWith("/conta/")) {
+    return NextResponse.rewrite(new URL("/not-found", request.url), { status: 404 });
+  }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -41,46 +58,45 @@ export async function middleware(request: NextRequest) {
   });
 
   // Atualiza e valida a sessão no Supabase
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  // Somente usuários com app_metadata.role = "admin" têm acesso ao painel
+  // Papel de administrador obtido do app_metadata (fonte segura no servidor)
   const isAdmin = user?.app_metadata?.role === "admin";
 
-  const pathname = request.nextUrl.pathname;
   const isAccessingAdmin = pathname.startsWith("/admin");
   const isAccessingAdminApi = pathname.startsWith("/api/admin");
   const isLoginPage = pathname === "/login";
+  const isCadastroPage = pathname === "/cadastro";
 
-  // 1. Se tentar acessar APIs administrativas sem ser admin -> Responde 404 (Not Found)
+  // 2. Proteção do Painel Administrativo (/admin e /api/admin/*)
   if (isAccessingAdminApi && !isAdmin) {
     return NextResponse.json({ error: "Página não encontrada" }, { status: 404 });
   }
 
-  // 2. Se tentar acessar qualquer página /admin sem ser admin -> 404 (disfarce total)
   if (isAccessingAdmin && !isAdmin) {
     return NextResponse.rewrite(new URL("/not-found", request.url), { status: 404 });
   }
 
-  // 3. Controle da página de Login:
+  // 3. Regras para /login
   if (isLoginPage) {
-    // Se já estiver logado como admin, redireciona direto para o painel
-    if (isAdmin) {
-      return NextResponse.redirect(new URL("/admin", request.url));
+    if (user) {
+      if (isAdmin) {
+        return NextResponse.redirect(new URL("/admin", request.url));
+      }
+      const rawNext = request.nextUrl.searchParams.get("next");
+      const destination = sanitizeRedirectUrl(rawNext, "/cliente");
+      return NextResponse.redirect(new URL(destination, request.url));
     }
 
-    // Checa se o visitante passou a chave secreta na URL (?chave=... ou ?key=...)
+    // Se forneceu a chave de admin na URL, grava o cookie de conveniência
     const queryKey =
       request.nextUrl.searchParams.get("chave") ||
       request.nextUrl.searchParams.get("key") ||
       request.nextUrl.searchParams.get("token");
 
-    // Sem chave configurada, nada é aceito (falha fechada)
-    const hasValidKeyInUrl = Boolean(ADMIN_SECRET_KEY) && queryKey === ADMIN_SECRET_KEY;
-    const hasValidAccessCookie =
-      Boolean(ADMIN_SECRET_KEY) && request.cookies.get(ACCESS_COOKIE_NAME)?.value === ADMIN_SECRET_KEY;
-
-    // Se forneceu a chave correta: libera o acesso, grava o cookie seguro e limpa a URL
-    if (hasValidKeyInUrl) {
+    if (Boolean(ADMIN_SECRET_KEY) && queryKey === ADMIN_SECRET_KEY) {
       const cleanUrl = new URL("/login", request.url);
       const redirectRes = NextResponse.redirect(cleanUrl);
       redirectRes.cookies.set(ACCESS_COOKIE_NAME, ADMIN_SECRET_KEY, {
@@ -88,25 +104,48 @@ export async function middleware(request: NextRequest) {
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
         path: "/",
-        maxAge: 60 * 60 * 24 * 30, // 30 dias de autorização no navegador do administrador
+        maxAge: 60 * 60 * 24 * 30,
       });
       return redirectRes;
     }
+  }
 
-    // Se NÃO possui a chave na URL nem o cookie gravado -> Responde 404 (tela de login invisível)
-    if (!hasValidAccessCookie) {
-      return NextResponse.rewrite(new URL("/not-found", request.url), { status: 404 });
+  // 4. Regras para /cadastro
+  if (isCadastroPage && user) {
+    if (isAdmin) {
+      return NextResponse.redirect(new URL("/admin", request.url));
     }
+    const rawNext = request.nextUrl.searchParams.get("next");
+    const destination = sanitizeRedirectUrl(rawNext, "/cliente");
+    return NextResponse.redirect(new URL(destination, request.url));
+  }
+
+  // 5. Proteção de Rotas Privadas de Clientes (/checkout e /cliente/*)
+  const isProtectedCustomerRoute =
+    pathname.startsWith("/checkout") ||
+    pathname === "/cliente" ||
+    pathname.startsWith("/cliente/");
+
+  if (isProtectedCustomerRoute && !user) {
+    const nextParam = encodeURIComponent(pathname + (request.nextUrl.search || ""));
+    return NextResponse.redirect(new URL(`/login?next=${nextParam}`, request.url));
   }
 
   return response;
 }
 
+// Restringe a execução do middleware estritamente às rotas que necessitam de interceptação
 export const config = {
   matcher: [
+    "/admin",
     "/admin/:path*",
     "/api/admin/:path*",
     "/login",
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/cadastro",
+    "/cliente",
+    "/cliente/:path*",
+    "/checkout",
+    "/conta",
+    "/conta/:path*",
   ],
 };

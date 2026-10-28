@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAdminSession } from "@/services/auth-service";
+import AdminLogoutButton from "@/components/admin/AdminLogoutButton";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -100,6 +101,30 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
           </div>
 
           <Link
+            href="/admin/pedidos"
+            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold text-[#202522] transition hover:bg-[#eaf3ee] hover:text-[#1f6b4f]"
+          >
+            <svg className="size-4 shrink-0 text-[#1f6b4f]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+            <span>Pedidos & Status</span>
+          </Link>
+
+          <div className="pt-4 px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[#7f8d85]">
+            Atendimento & Loja
+          </div>
+
+          <Link
+            href="/admin/contato"
+            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold text-[#202522] transition hover:bg-[#eaf3ee] hover:text-[#1f6b4f]"
+          >
+            <svg className="size-4 shrink-0 text-[#1f6b4f]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+            </svg>
+            <span>Canais de Contato</span>
+          </Link>
+
+          <Link
             href="/"
             target="_blank"
             rel="noopener noreferrer"
@@ -124,15 +149,7 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
                 {session.email || "Use Três Marias"}
               </p>
             </div>
-            <Link
-              href="/login"
-              className="rounded-lg p-1.5 text-[#5f6863] transition hover:bg-red-50 hover:text-red-700"
-              title="Encerrar sessão"
-            >
-              <svg className="size-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-            </Link>
+            <AdminLogoutButton />
           </div>
         </div>
       </aside>
@@ -148,12 +165,24 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
             use<span className="text-[#1f6b4f]">Três</span>Marias <span className="text-xs font-sans text-[#1f6b4f]">CMS</span>
           </Link>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Link
-              href="/admin/paginas/home-hero"
+              href="/admin/pedidos"
               className="rounded-lg bg-[#eaf3ee] px-2.5 py-1 text-xs font-semibold text-[#1f6b4f]"
             >
-              Editor Hero
+              Pedidos
+            </Link>
+            <Link
+              href="/admin/contato"
+              className="rounded-lg border border-[#e6e7e4] bg-white px-2.5 py-1 text-xs font-semibold text-[#202522]"
+            >
+              Contato
+            </Link>
+            <Link
+              href="/admin/paginas/home-hero"
+              className="rounded-lg border border-[#e6e7e4] bg-white px-2.5 py-1 text-xs font-semibold text-[#202522]"
+            >
+              Editor
             </Link>
             <Link
               href="/"
@@ -162,6 +191,9 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
             >
               Loja ↗
             </Link>
+            <AdminLogoutButton
+              className="rounded-lg border border-red-200 bg-red-50 p-1 text-xs text-red-700 hover:bg-red-100"
+            />
           </div>
         </header>
 

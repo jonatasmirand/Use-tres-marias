@@ -59,6 +59,7 @@ export interface ContactSectionProps {
   whatsappFormatted?: string;
   instagramHandle?: string;
   emailAddress?: string;
+  businessHours?: string;
   showForm?: boolean;
 }
 
@@ -67,6 +68,7 @@ export default function ContactSection({
   whatsappFormatted = "(11) 99999-9999",
   instagramHandle = "usetresmarias",
   emailAddress = "contato@usetresmarias.com.br",
+  businessHours = "Segunda a Sexta: 09h às 18h | Sábado: 09h às 13h",
   showForm = true,
 }: ContactSectionProps) {
   const [copiedEmail, setCopiedEmail] = useState(false);
@@ -150,7 +152,7 @@ export default function ContactSection({
                 {whatsappFormatted}
               </div>
               <p className="text-[11px] text-[#8a948e] mb-6">
-                Segunda a Sexta: 09h às 18h &nbsp;|&nbsp; Sábados: 09h às 13h
+                {businessHours}
               </p>
             </div>
 

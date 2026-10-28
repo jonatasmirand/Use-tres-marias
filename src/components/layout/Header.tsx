@@ -81,6 +81,17 @@ export default function Header() {
               </svg>
             </button>
 
+            {/* Link para Área do Cliente / Pedidos */}
+            <Link
+              href="/cliente"
+              aria-label="Área do Cliente"
+              className="relative p-1 text-[#202522] transition hover:text-[#1f6b4f] cursor-pointer"
+            >
+              <svg className="size-[21px]" fill="none" stroke="currentColor" strokeWidth="1.6" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+              </svg>
+            </Link>
+
             <button
               type="button"
               aria-label="Abrir Sacola de Compras"
@@ -118,6 +129,15 @@ export default function Header() {
                 </li>
               ))}
               <li className="pt-2 mt-1 border-t border-[#e6e7e4]">
+                <Link
+                  href="/cliente"
+                  className="block text-xs uppercase tracking-[0.06em] text-[#1f6b4f] font-bold py-1.5 transition"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  👤 Área do Cliente & Pedidos
+                </Link>
+              </li>
+              <li>
                 <Link
                   href="/sobre"
                   className="block text-xs uppercase tracking-[0.06em] text-[#5f6863] py-1.5 transition hover:text-[#1f6b4f]"

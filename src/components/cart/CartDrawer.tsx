@@ -2,9 +2,9 @@
 
 import { useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
-
-const WHATSAPP_PHONE = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "5511999999999";
 
 export default function CartDrawer() {
   const {
@@ -17,7 +17,13 @@ export default function CartDrawer() {
     totalPrice,
   } = useCart();
 
+  const router = useRouter();
   const drawerRef = useRef<HTMLDivElement>(null);
+
+  const handleGoToCheckout = () => {
+    closeCart();
+    router.push("/checkout");
+  };
 
   // Fecha o drawer com a tecla ESC e trava o scroll da página enquanto aberto
   useEffect(() => {
@@ -49,34 +55,6 @@ export default function CartDrawer() {
     style: "currency",
     currency: "BRL",
   }).format(totalPrice / 6);
-
-  // Mensagem formatada para o WhatsApp
-  const generateWhatsAppMessage = () => {
-    const itemsList = items
-      .map(
-        (item) =>
-          `• ${item.quantity}x ${item.name} (${item.size}) — ${new Intl.NumberFormat("pt-BR", {
-            style: "currency",
-            currency: "BRL",
-          }).format(item.price * item.quantity)}`
-      )
-      .join("\n");
-
-    const freteTexto = "A calcular com o CEP";
-
-    const text = `Olá, equipe useTrêsMarias! Gostaria de finalizar meu pedido:
-
-🛍️ *Itens da Sacola:*
-${itemsList}
-
-💰 *Subtotal:* ${formattedSubtotal}
-🚚 *Frete:* ${freteTexto}
-💳 *Total:* ${formattedSubtotal}
-
-Poderiam me passar os dados para pagamento e prazo de envio? Obrigado!`;
-
-    return encodeURIComponent(text);
-  };
 
   return (
     <>
@@ -121,9 +99,10 @@ Poderiam me passar os dados para pagamento e prazo de envio? Obrigado!`;
           </button>
         </header>
 
-        {/* Conteúdo Central: Itens ou Estado Vazio */}
+        {/* Conteúdo Central: Itens ou Sacola Vazia */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
           {items.length === 0 ? (
+            /* Sacola Vazia */
             <div className="flex h-full flex-col items-center justify-center text-center py-12">
               <div className="flex size-16 items-center justify-center rounded-full bg-[#eaf3ee] text-2xl text-[#1f6b4f] mb-4">
                 ♡
@@ -143,6 +122,7 @@ Poderiam me passar os dados para pagamento e prazo de envio? Obrigado!`;
               </button>
             </div>
           ) : (
+            /* Lista de Itens */
             <div className="divide-y divide-[#f0f2f0]">
               {items.map((item) => {
                 const itemTotal = new Intl.NumberFormat("pt-BR", {
@@ -156,12 +136,14 @@ Poderiam me passar os dados para pagamento e prazo de envio? Obrigado!`;
                     <Link
                       href={`/produto/${item.slug}`}
                       onClick={closeCart}
-                      className="size-20 shrink-0 overflow-hidden rounded-xl bg-[#fafbf9] border border-[#e6e7e4]"
+                      className="size-20 shrink-0 overflow-hidden rounded-xl bg-[#fafbf9] border border-[#e6e7e4] relative"
                     >
-                      <img
+                      <Image
                         src={item.image}
                         alt={item.name}
-                        className="size-full object-cover object-top transition hover:scale-105"
+                        fill
+                        className="object-cover object-top transition hover:scale-105"
+                        sizes="80px"
                       />
                     </Link>
 
@@ -244,17 +226,16 @@ Poderiam me passar os dados para pagamento e prazo de envio? Obrigado!`;
               </div>
             </div>
 
-            {/* Botão de Finalização via WhatsApp */}
+            {/* Botão de Navegação para o Checkout com Autenticação */}
             <div className="space-y-2">
-              <a
-                href={`https://wa.me/${WHATSAPP_PHONE}?text=${generateWhatsAppMessage()}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#1f6b4f] py-3.5 text-xs font-bold uppercase tracking-wider text-white shadow-md transition hover:bg-[#164d3a] hover:shadow-lg active:scale-[0.99]"
+              <button
+                type="button"
+                onClick={handleGoToCheckout}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#1f6b4f] py-3.5 text-xs font-bold uppercase tracking-wider text-white shadow-md transition hover:bg-[#164d3a] hover:shadow-lg active:scale-[0.99] cursor-pointer"
               >
-                <span>Finalizar Pedido pelo WhatsApp</span>
+                <span>Fechar Pedido / Finalizar Compra</span>
                 <span>→</span>
-              </a>
+              </button>
 
               <button
                 type="button"
@@ -269,7 +250,9 @@ Poderiam me passar os dados para pagamento e prazo de envio? Obrigado!`;
             <div className="mt-4 border-t border-[#f0f2f0] pt-3 text-center text-[10px] text-[#777d78] flex items-center justify-center gap-3">
               <span>🔒 Compra Segura</span>
               <span>•</span>
-              <span>🔄 Troca Fácil em 30 dias</span>
+              <span>📦 Link Individual de Rastreio</span>
+              <span>•</span>
+              <span>🔄 Troca Fácil</span>
             </div>
           </footer>
         )}
