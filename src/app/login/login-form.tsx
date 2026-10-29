@@ -4,6 +4,7 @@ import { useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createAuthClient } from "@/lib/supabase/auth-client";
+import { sanitizeRedirectUrl } from "@/lib/auth-redirect";
 
 function getAuthErrorMessage(code: string | undefined, message: string | undefined): string {
   if (code === "invalid_credentials" || code === "invalid_grant") {
@@ -95,17 +96,12 @@ export default function LoginForm() {
 
       if (isAdmin) {
         setSuccessMessage("Acesso administrativo confirmado. Entrando no painel...");
+        const destination = sanitizeRedirectUrl(nextUrl, "/admin", true);
         setTimeout(() => {
-          window.location.href = "/admin";
+          window.location.href = destination;
         }, 700);
       } else {
-        const destination =
-          nextUrl &&
-          nextUrl.startsWith("/") &&
-          !nextUrl.startsWith("//") &&
-          !nextUrl.startsWith("/conta")
-            ? nextUrl
-            : "/cliente";
+        const destination = sanitizeRedirectUrl(nextUrl, "/cliente", false);
 
         setSuccessMessage("Login realizado com sucesso! Redirecionando...");
         setTimeout(() => {

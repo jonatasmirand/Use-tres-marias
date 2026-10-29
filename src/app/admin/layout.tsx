@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { getAdminSession } from "@/services/auth-service";
 import AdminLogoutButton from "@/components/admin/AdminLogoutButton";
@@ -9,6 +10,7 @@ interface AdminLayoutProps {
 }
 
 export default async function AdminLayout({ children }: AdminLayoutProps) {
+   await connection();
   const session = await getAdminSession();
 
   if (!session) {

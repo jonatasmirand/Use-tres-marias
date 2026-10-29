@@ -38,6 +38,11 @@ export default async function CustomerOrderDetailPage({
     redirect(`/login?next=/cliente/pedidos/${id}`);
   }
 
+  // Política estrita: Administradores não devem acessar ou permanecer na área de clientes
+  if (user.app_metadata?.role === "admin") {
+    redirect("/admin");
+  }
+
   // 1. Validação estrita de titularidade no servidor:
   // Se o pedido não pertencer a user.id, retorna null
   const order = await getCustomerOrderById(id, user.id);

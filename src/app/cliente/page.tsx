@@ -24,6 +24,11 @@ export default async function CustomerAccountPage() {
     redirect("/login?next=/cliente");
   }
 
+  // Política estrita: Administradores não devem acessar ou permanecer na área de clientes
+  if (user.app_metadata?.role === "admin") {
+    redirect("/admin");
+  }
+
   const orders = await getCustomerOrders(user.id);
   const recentOrders = orders.slice(0, 3);
 
@@ -40,9 +45,9 @@ export default async function CustomerAccountPage() {
 
   return (
     <div className="space-y-8">
-      {/* Banner de Boas-Vindas */}
+      {/* Banner de Boas-Vindas da Cliente */}
       <section className="rounded-3xl border border-[#e6e7e4] bg-white p-6 sm:p-8 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
           <div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#1f6b4f] bg-[#eaf3ee] px-2.5 py-0.5 rounded-full">
               Conta de Cliente Verificada
@@ -55,64 +60,24 @@ export default async function CustomerAccountPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
             <Link
               href="/cliente/pedidos"
-              className="px-4 py-2 bg-[#183428] text-white text-xs font-semibold rounded-xl hover:bg-[#10241b] transition shadow-xs"
+              className="px-4 py-2.5 bg-[#183428] text-white text-xs font-semibold rounded-xl hover:bg-[#10241b] transition shadow-xs"
             >
               Ver Meus Pedidos ({orders.length})
+            </Link>
+            <Link
+              href="/novidades"
+              className="px-4 py-2.5 bg-white border border-[#e6e7e4] text-[#202522] text-xs font-semibold rounded-xl hover:bg-[#fafbf9] transition shadow-xs"
+            >
+              Explorar Coleção →
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Grid de Resumo */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Card 1: Total de Pedidos */}
-        <div className="rounded-2xl border border-[#e6e7e4] bg-white p-5 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#5f6863]">Total de Pedidos</span>
-            <span className="text-xl">🛍️</span>
-          </div>
-          <p className="font-serif text-3xl font-bold text-[#182620] mt-2">{orders.length}</p>
-          <Link
-            href="/cliente/pedidos"
-            className="text-[11px] font-semibold text-[#1f6b4f] hover:underline mt-3 inline-block"
-          >
-            Acessar histórico completo →
-          </Link>
-        </div>
-
-        {/* Card 2: Pedidos em Andamento */}
-        <div className="rounded-2xl border border-[#e6e7e4] bg-white p-5 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#5f6863]">Em Rota / Preparação</span>
-            <span className="text-xl">🚚</span>
-          </div>
-          <p className="font-serif text-3xl font-bold text-[#182620] mt-2">
-            {orders.filter((o) => o.status !== "completed").length}
-          </p>
-          <span className="text-[11px] text-[#7a857f] mt-3 inline-block">
-            Atualizações em tempo real
-          </span>
-        </div>
-
-        {/* Card 3: Compras Concluídas */}
-        <div className="rounded-2xl border border-[#e6e7e4] bg-white p-5 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#5f6863]">Pedidos Concluídos</span>
-            <span className="text-xl">✨</span>
-          </div>
-          <p className="font-serif text-3xl font-bold text-[#182620] mt-2">
-            {orders.filter((o) => o.status === "completed").length}
-          </p>
-          <span className="text-[11px] text-[#7a857f] mt-3 inline-block">
-            Entregas finalizadas com sucesso
-          </span>
-        </div>
-      </div>
-
-      {/* Seção de Pedidos Recentes */}
+      {/* Seção de Pedidos Recentes do Cliente */}
       <section className="rounded-3xl border border-[#e6e7e4] bg-white p-6 sm:p-8 shadow-xs">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -120,7 +85,7 @@ export default async function CustomerAccountPage() {
               Últimos Pedidos
             </h2>
             <p className="text-xs text-[#5f6863] mt-0.5">
-              Consulte os detalhes e links de acompanhamento de suas compras mais recentes.
+              Consulte o status em tempo real e os links de entrega das suas compras mais recentes.
             </p>
           </div>
 
@@ -136,7 +101,7 @@ export default async function CustomerAccountPage() {
 
         {recentOrders.length === 0 ? (
           <div className="py-12 text-center text-xs text-[#7a857f] space-y-3">
-            <span className="text-4xl block">📦</span>
+            <span className="text-4xl block">🛍️</span>
             <p className="font-semibold text-sm text-[#202522]">
               Você ainda não realizou nenhum pedido.
             </p>
@@ -145,7 +110,7 @@ export default async function CustomerAccountPage() {
             </p>
             <Link
               href="/novidades"
-              className="inline-block mt-2 px-4 py-2 bg-[#1f6b4f] text-white font-semibold rounded-xl hover:bg-[#164d3a] transition shadow-xs"
+              className="inline-block mt-2 px-4 py-2.5 bg-[#1f6b4f] text-white font-semibold rounded-xl hover:bg-[#164d3a] transition shadow-xs"
             >
               Explorar Coleção
             </Link>
@@ -195,7 +160,7 @@ export default async function CustomerAccountPage() {
                         href={`/pedido/acompanhar/${order.tracking_token || order.id}`}
                         className="px-3 py-1.5 text-xs font-semibold bg-[#183428] text-white rounded-lg hover:bg-[#10241b] transition"
                       >
-                        Acompanhar
+                        Acompanhar Entrega
                       </Link>
                     </div>
                   </div>
@@ -205,6 +170,49 @@ export default async function CustomerAccountPage() {
           </div>
         )}
       </section>
+
+      {/* Cards de Apoio e Atendimento ao Cliente */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="rounded-2xl border border-[#e6e7e4] bg-white p-6 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="size-10 rounded-xl bg-[#eaf3ee] text-[#1f6b4f] flex items-center justify-center text-lg mb-3">
+              💬
+            </div>
+            <h3 className="font-serif text-base font-bold text-[#182620]">
+              Precisa de ajuda com uma compra?
+            </h3>
+            <p className="text-xs text-[#5f6863] mt-1">
+              Fale diretamente com nossa equipe de suporte para tirar dúvidas sobre pedidos, prazos de entrega ou trocas.
+            </p>
+          </div>
+          <Link
+            href="/contato"
+            className="text-xs font-semibold text-[#1f6b4f] hover:underline mt-4 inline-block"
+          >
+            Falar com o Atendimento →
+          </Link>
+        </div>
+
+        <div className="rounded-2xl border border-[#e6e7e4] bg-white p-6 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="size-10 rounded-xl bg-[#eaf3ee] text-[#1f6b4f] flex items-center justify-center text-lg mb-3">
+              👗
+            </div>
+            <h3 className="font-serif text-base font-bold text-[#182620]">
+              Novidades e Tendências
+            </h3>
+            <p className="text-xs text-[#5f6863] mt-1">
+              Descubra nossas coleções exclusivas, tecidos nobres e lançamentos feitos especialmente para você.
+            </p>
+          </div>
+          <Link
+            href="/novidades"
+            className="text-xs font-semibold text-[#1f6b4f] hover:underline mt-4 inline-block"
+          >
+            Ver Coleção Completa →
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }

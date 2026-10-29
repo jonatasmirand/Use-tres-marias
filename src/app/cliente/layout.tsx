@@ -22,6 +22,11 @@ export default async function CustomerAreaLayout({
     redirect("/login?next=/cliente");
   }
 
+  // Política estrita: Administradores não devem acessar ou permanecer na área de clientes
+  if (user.app_metadata?.role === "admin") {
+    redirect("/admin");
+  }
+
   const customerName =
     (user.user_metadata?.full_name as string) ||
     (user.user_metadata?.name as string) ||
@@ -50,15 +55,6 @@ export default async function CustomerAreaLayout({
             <span className="hidden md:inline-block text-[#5f6863]">
               Olá, <strong className="text-[#202522]">{customerName}</strong>
             </span>
-
-            {user.app_metadata?.role === "admin" && (
-              <Link
-                href="/admin"
-                className="px-3 py-1.5 rounded-lg bg-[#183428] text-white hover:bg-[#10241b] transition font-semibold"
-              >
-                Painel Admin
-              </Link>
-            )}
 
             <Link
               href="/"

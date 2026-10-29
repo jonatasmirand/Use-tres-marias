@@ -1,20 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { sanitizeRedirectUrl } from "@/lib/auth-redirect";
 
 const ADMIN_SECRET_KEY = process.env.ADMIN_SECRET_KEY || "";
 const ACCESS_COOKIE_NAME = "tm_admin_access";
-
-function sanitizeRedirectUrl(url: string | null, fallback: string): string {
-  if (!url) return fallback;
-  if (!url.startsWith("/") || url.startsWith("//") || url.startsWith("/\\")) {
-    return fallback;
-  }
-  // Não permitir redirecionamentos para rotas extintas
-  if (url === "/conta" || url.startsWith("/conta/")) {
-    return fallback;
-  }
-  return url;
-}
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
@@ -57,36 +46,46 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // Atualiza e valida a sessão no Supabase
+  // Atualiza e valida a sessão no Supabase de forma confiável no servidor
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Papel de administrador obtido do app_metadata (fonte segura no servidor)
+  // Papel de administrador obtido estritamente do app_metadata (fonte segura e imutável pelo cliente)
   const isAdmin = user?.app_metadata?.role === "admin";
 
   const isAccessingAdmin = pathname.startsWith("/admin");
   const isAccessingAdminApi = pathname.startsWith("/api/admin");
   const isLoginPage = pathname === "/login";
   const isCadastroPage = pathname === "/cadastro";
+  const isClienteRoute = pathname === "/cliente" || pathname.startsWith("/cliente/");
 
   // 2. Proteção do Painel Administrativo (/admin e /api/admin/*)
   if (isAccessingAdminApi && !isAdmin) {
     return NextResponse.json({ error: "Página não encontrada" }, { status: 404 });
   }
 
-  if (isAccessingAdmin && !isAdmin) {
-    return NextResponse.rewrite(new URL("/not-found", request.url), { status: 404 });
+  if (isAccessingAdmin) {
+    // Visitante não autenticado tentando acessar o admin -> redireciona ao login com retorno seguro
+    if (!user) {
+      const nextParam = encodeURIComponent(pathname + (request.nextUrl.search || ""));
+      return NextResponse.redirect(new URL(`/login?next=${nextParam}`, request.url));
+    }
+    // Cliente comum autenticado tentando acessar o admin -> bloqueio efetivo (404 Not Found)
+    if (!isAdmin) {
+      return NextResponse.rewrite(new URL("/not-found", request.url), { status: 404 });
+    }
   }
 
   // 3. Regras para /login
   if (isLoginPage) {
     if (user) {
-      if (isAdmin) {
-        return NextResponse.redirect(new URL("/admin", request.url));
-      }
       const rawNext = request.nextUrl.searchParams.get("next");
-      const destination = sanitizeRedirectUrl(rawNext, "/cliente");
+      if (isAdmin) {
+        const destination = sanitizeRedirectUrl(rawNext, "/admin", true);
+        return NextResponse.redirect(new URL(destination, request.url));
+      }
+      const destination = sanitizeRedirectUrl(rawNext, "/cliente", false);
       return NextResponse.redirect(new URL(destination, request.url));
     }
 
@@ -116,17 +115,27 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/admin", request.url));
     }
     const rawNext = request.nextUrl.searchParams.get("next");
-    const destination = sanitizeRedirectUrl(rawNext, "/cliente");
+    const destination = sanitizeRedirectUrl(rawNext, "/cliente", false);
     return NextResponse.redirect(new URL(destination, request.url));
   }
 
-  // 5. Proteção de Rotas Privadas de Clientes (/checkout e /cliente/*)
-  const isProtectedCustomerRoute =
-    pathname.startsWith("/checkout") ||
-    pathname === "/cliente" ||
-    pathname.startsWith("/cliente/");
+  // 5. Política e Proteção da Área de Cliente (/cliente e /cliente/*)
+  if (isClienteRoute) {
+    // Visitante não autenticado tentando acessar a área de cliente -> login com retorno
+    if (!user) {
+      const nextParam = encodeURIComponent(pathname + (request.nextUrl.search || ""));
+      return NextResponse.redirect(new URL(`/login?next=${nextParam}`, request.url));
+    }
 
-  if (isProtectedCustomerRoute && !user) {
+    // Administrador autenticado tentando acessar a área de cliente:
+    // Aplicação da política de perfil: impede permanência e redireciona ao painel administrativo
+    if (isAdmin) {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
+  }
+
+  // 6. Proteção de outras rotas privadas de clientes (/checkout)
+  if (pathname.startsWith("/checkout") && !user) {
     const nextParam = encodeURIComponent(pathname + (request.nextUrl.search || ""));
     return NextResponse.redirect(new URL(`/login?next=${nextParam}`, request.url));
   }

@@ -24,6 +24,11 @@ export default async function CustomerOrdersPage() {
     redirect("/login?next=/cliente/pedidos");
   }
 
+  // Política estrita: Administradores não devem acessar ou permanecer na área de clientes
+  if (user.app_metadata?.role === "admin") {
+    redirect("/admin");
+  }
+
   const orders = await getCustomerOrders(user.id);
 
   const formatCurrency = (val: number) =>

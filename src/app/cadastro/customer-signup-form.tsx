@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createAuthClient } from "@/lib/supabase/auth-client";
 import { customerSignUpSchema } from "@/validations/customer-auth-schemas";
+import { sanitizeRedirectUrl } from "@/lib/auth-redirect";
 
 function getSignUpErrorMessage(code: string | undefined, message: string | undefined): string {
   if (code === "user_already_exists" || message?.toLowerCase().includes("already registered")) {
@@ -28,13 +29,7 @@ function getSignUpErrorMessage(code: string | undefined, message: string | undef
 export default function CustomerSignUpForm() {
   const searchParams = useSearchParams();
   const rawNextUrl = searchParams.get("next") || "";
-  const nextUrl =
-    rawNextUrl &&
-    rawNextUrl.startsWith("/") &&
-    !rawNextUrl.startsWith("//") &&
-    !rawNextUrl.startsWith("/conta")
-      ? rawNextUrl
-      : "/cliente";
+  const nextUrl = sanitizeRedirectUrl(rawNextUrl, "/cliente", false);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
