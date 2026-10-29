@@ -72,7 +72,9 @@ export async function createOrder(
 
   let orderId = crypto.randomUUID();
 
-  const cleanOrigin = originUrl.replace(/\/$/, "");
+  const cleanOrigin = originUrl
+    ? originUrl.trim().replace(/^(https?:\/\/)+(https?:\/\/)+/, "$2").replace(/\/+$/, "")
+    : "";
   const trackingPath = `/pedido/acompanhar/${rawToken}`;
   const trackingUrl = cleanOrigin ? `${cleanOrigin}${trackingPath}` : trackingPath;
 

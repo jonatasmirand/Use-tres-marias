@@ -149,6 +149,45 @@ runTest("Formatação de data é determinística independentemente do fuso do se
   assert.ok(formatted.includes("28 de out"), `Data deve conter 28 de out, recebido: ${formatted}`);
 });
 
+// Teste 6: Sanitização e prevenção contra duplicação de protocolo https://
+function normalizeSiteUrlMock(input) {
+  if (!input) return "";
+  let clean = input.trim();
+  clean = clean.replace(/^(https?:\/\/)+(https?:\/\/)+/, "$2");
+  if (!clean.startsWith("http://") && !clean.startsWith("https://")) {
+    const isLocal =
+      clean.includes("localhost") ||
+      clean.includes("127.0.0.1") ||
+      clean.includes("0.0.0.0");
+    const protocol = isLocal ? "http" : "https";
+    clean = `${protocol}://${clean}`;
+  }
+  return clean.replace(/\/+$/, "");
+}
+
+runTest("normalizeSiteUrl corrige 'https://https://' e previne duplicação de protocolo", () => {
+  assert.strictEqual(
+    normalizeSiteUrlMock("https://https://use-tres-marias.vercel.app"),
+    "https://use-tres-marias.vercel.app"
+  );
+  assert.strictEqual(
+    normalizeSiteUrlMock("https://use-tres-marias.vercel.app"),
+    "https://use-tres-marias.vercel.app"
+  );
+  assert.strictEqual(
+    normalizeSiteUrlMock("use-tres-marias.vercel.app"),
+    "https://use-tres-marias.vercel.app"
+  );
+  assert.strictEqual(
+    normalizeSiteUrlMock("https://use-tres-marias.vercel.app/"),
+    "https://use-tres-marias.vercel.app"
+  );
+  assert.strictEqual(
+    normalizeSiteUrlMock("http://localhost:3000"),
+    "http://localhost:3000"
+  );
+});
+
 console.log(`\n=== RESULTADO DOS TESTES: ${passed} / ${total} PASSARAM ===\n`);
 if (passed !== total) {
   process.exit(1);

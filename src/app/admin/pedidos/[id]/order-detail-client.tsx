@@ -91,7 +91,9 @@ export default function OrderDetailClient({
   const handleCopyTrackingLink = async () => {
     const currentOrigin =
       origin || (typeof window !== "undefined" ? window.location.origin : "");
-    const cleanCurrentOrigin = currentOrigin ? currentOrigin.replace(/\/$/, "") : "";
+    const cleanCurrentOrigin = currentOrigin
+      ? currentOrigin.replace(/^(https?:\/\/)+(https?:\/\/)+/, "$2").replace(/\/+$/, "")
+      : "";
     const identifier = order.tracking_token || order.id;
     const trackingUrl = cleanCurrentOrigin
       ? `${cleanCurrentOrigin}/pedido/acompanhar/${identifier}`
@@ -109,7 +111,9 @@ export default function OrderDetailClient({
 
   // Montagem determinística da URL de acompanhamento para o link do WhatsApp
   const trackingIdentifier = order.tracking_token || order.id;
-  const cleanOrigin = origin ? origin.replace(/\/$/, "") : "";
+  const cleanOrigin = origin
+    ? origin.replace(/^(https?:\/\/)+(https?:\/\/)+/, "$2").replace(/\/+$/, "")
+    : "";
   const trackingUrl = cleanOrigin
     ? `${cleanOrigin}/pedido/acompanhar/${trackingIdentifier}`
     : `/pedido/acompanhar/${trackingIdentifier}`;
