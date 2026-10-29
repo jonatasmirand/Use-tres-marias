@@ -3,6 +3,7 @@
 import { useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import Logo from "@/components/brand/Logo";
 import { createAuthClient } from "@/lib/supabase/auth-client";
 import { sanitizeRedirectUrl } from "@/lib/auth-redirect";
 
@@ -200,14 +201,8 @@ export default function LoginForm() {
 
       <div className="w-full max-w-[440px]">
         {/* Cabeçalho superior com link da marca */}
-        <div className="mb-6 text-center">
-          <Link
-            aria-label="Use Três Marias - Página inicial"
-            className="inline-block font-serif text-[28px] font-bold tracking-tight text-[#202522] transition hover:opacity-90"
-            href="/"
-          >
-            use<span className="text-[#1f6b4f]">Três</span>Marias
-          </Link>
+        <div className="mb-6 flex justify-center text-center">
+          <Logo href="/" imageClassName="h-10 w-auto" />
         </div>
 
         {/* Card do formulário de login unificado */}

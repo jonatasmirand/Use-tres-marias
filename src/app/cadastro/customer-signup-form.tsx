@@ -3,6 +3,7 @@
 import { useState, useRef, FormEvent } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import Logo from "@/components/brand/Logo";
 import { createAuthClient } from "@/lib/supabase/auth-client";
 import { customerSignUpSchema } from "@/validations/customer-auth-schemas";
 import { sanitizeRedirectUrl } from "@/lib/auth-redirect";
@@ -230,13 +231,8 @@ export default function CustomerSignUpForm() {
 
       <div className="w-full max-w-[460px]">
         {/* Marca Três Marias */}
-        <div className="mb-6 text-center">
-          <Link
-            href="/"
-            className="inline-block font-serif text-[28px] font-bold tracking-tight text-[#202522] transition hover:opacity-90"
-          >
-            use<span className="text-[#1f6b4f]">Três</span>Marias
-          </Link>
+        <div className="mb-6 flex justify-center text-center">
+          <Logo href="/" imageClassName="h-10 w-auto" />
         </div>
 
         {/* Card do Formulário */}

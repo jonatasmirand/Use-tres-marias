@@ -4,6 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import LogoutButton from "@/components/account/LogoutButton";
+import Logo from "@/components/brand/Logo";
 
 export const instant = false;
 
@@ -39,12 +40,7 @@ export default async function CustomerAreaLayout({
       <header className="sticky top-0 z-20 border-b border-[#e6e7e4] bg-white/95 backdrop-blur-sm">
         <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-6">
-            <Link
-              href="/"
-              className="font-serif text-xl font-bold tracking-tight text-[#202522] hover:opacity-90 transition"
-            >
-              use<span className="text-[#1f6b4f]">Três</span>Marias
-            </Link>
+            <Logo href="/" imageClassName="h-7 w-auto" />
 
             <span className="hidden sm:inline-block text-xs font-semibold uppercase tracking-wider text-[#7a857f] border-l border-[#e6e7e4] pl-4">
               Área do Cliente

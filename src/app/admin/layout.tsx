@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAdminSession } from "@/services/auth-service";
 import AdminLogoutButton from "@/components/admin/AdminLogoutButton";
+import Logo from "@/components/brand/Logo";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -21,15 +22,16 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
       <aside className="hidden w-64 shrink-0 flex-col border-r border-[#e6e7e4] bg-white lg:flex">
         {/* Topo da Sidebar com a Marca */}
         <div className="flex h-16 items-center border-b border-[#e6e7e4] px-6">
-          <Link
-            href="/admin"
-            className="flex items-center gap-2 font-serif text-[20px] font-bold tracking-[-0.04em] text-[#202522]"
-          >
-            <span>use<span className="text-[#1f6b4f]">Três</span>Marias</span>
-            <span className="rounded-md bg-[#eaf3ee] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#1f6b4f]">
+          <div className="flex items-center gap-2">
+            <Logo href="/" imageClassName="h-7 w-auto" />
+            <Link
+              href="/admin"
+              className="rounded-md bg-[#eaf3ee] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#1f6b4f] transition hover:bg-[#d8eade]"
+              title="Painel Administrativo"
+            >
               CMS
-            </span>
-          </Link>
+            </Link>
+          </div>
         </div>
 
         {/* Links de Navegação Administrativa */}
@@ -172,12 +174,16 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
       <div className="flex flex-1 flex-col overflow-x-hidden">
         {/* Barra Superior Mobile e Ações Rápidas */}
         <header className="flex h-16 items-center justify-between border-b border-[#e6e7e4] bg-white px-5 lg:hidden">
-          <Link
-            href="/admin"
-            className="font-serif text-[18px] font-bold tracking-[-0.04em] text-[#202522]"
-          >
-            use<span className="text-[#1f6b4f]">Três</span>Marias <span className="text-xs font-sans text-[#1f6b4f]">CMS</span>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Logo href="/" imageClassName="h-6 w-auto" />
+            <Link
+              href="/admin"
+              className="rounded-md bg-[#eaf3ee] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#1f6b4f] transition hover:bg-[#d8eade]"
+              title="Painel Administrativo"
+            >
+              CMS
+            </Link>
+          </div>
 
           <div className="flex items-center gap-2">
             <Link

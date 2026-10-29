@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
+import Logo from "@/components/brand/Logo";
 import { useState } from "react";
 import { useCart } from "@/context/CartContext";
 import SearchModal from "@/components/search/SearchModal";
@@ -36,21 +36,12 @@ export default function Header() {
           </button>
 
           {/* Logo da loja (lateral esquerda) */}
-          <Link
+          <Logo
             href="/"
-            aria-label="Três Marias — página inicial"
-            className="justify-self-center transition hover:opacity-90 md:justify-self-start"
             onClick={() => setIsMenuOpen(false)}
-          >
-            <Image
-              src="/logo-tres-marias.png"
-              alt="Três Marias"
-              width={1024}
-              height={240}
-              priority
-              className="h-9 w-auto md:h-14"
-            />
-          </Link>
+            className="justify-self-center transition hover:opacity-90 md:justify-self-start"
+            imageClassName="h-9 w-auto md:h-14"
+          />
 
           {/* Menu de Navegação Desktop (centralizado) */}
           <nav aria-label="Navegação principal" className="hidden md:block">

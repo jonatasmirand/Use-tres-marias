@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Logo from "@/components/brand/Logo";
 
 export default function Footer() {
   return (
@@ -6,9 +7,12 @@ export default function Footer() {
       <div className="mx-auto max-w-[1240px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr] gap-[45px]">
         {/* Coluna 1: Marca & Missão */}
         <div>
-          <h3 className="font-serif text-[27px] font-normal text-white mb-[14px]">
-            useTrêsMarias
-          </h3>
+          <div className="mb-[14px]">
+            <Logo
+              href="/"
+              imageClassName="h-8 w-auto brightness-0 invert opacity-90 transition hover:opacity-100"
+            />
+          </div>
           <p className="text-[12px] leading-[1.8] text-[#aeb9b3] max-w-sm">
             Moda feminina para mulheres que gostam de se vestir de si mesmas. Peças pensadas para acompanhar todos os seus momentos.
           </p>

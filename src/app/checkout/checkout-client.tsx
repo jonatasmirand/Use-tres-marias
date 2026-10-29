@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import Logo from "@/components/brand/Logo";
 import { useCart } from "@/context/CartContext";
 
 const WHATSAPP_PHONE = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "5511999999999";
@@ -240,12 +241,7 @@ Poderiam me enviar os dados para pagamento e prazo de envio? Obrigado!`;
         {/* Cabeçalho */}
         <header className="mb-8 flex items-center justify-between border-b border-[#e6e7e4] pb-5">
           <div>
-            <Link
-              href="/"
-              className="font-serif text-2xl font-bold tracking-tight text-[#202522] hover:opacity-90 transition"
-            >
-              use<span className="text-[#1f6b4f]">Três</span>Marias
-            </Link>
+            <Logo href="/" imageClassName="h-7 w-auto" />
             <p className="text-xs text-[#5f6863] mt-1">
               Finalização de Compra Segura
             </p>
