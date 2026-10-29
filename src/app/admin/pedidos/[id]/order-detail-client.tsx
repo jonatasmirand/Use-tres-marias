@@ -1,15 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Order, OrderStatus, ORDER_STATUS_MAP } from "@/types/order";
 
 interface OrderDetailClientProps {
   initialOrder: Order;
+  initialOrigin?: string;
 }
 
-export default function OrderDetailClient({ initialOrder }: OrderDetailClientProps) {
+export default function OrderDetailClient({
+  initialOrder,
+  initialOrigin = "",
+}: OrderDetailClientProps) {
   const [order, setOrder] = useState<Order>(initialOrder);
+  const [origin, setOrigin] = useState<string>(initialOrigin);
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus>(initialOrder.status);
   const [notes, setNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -18,13 +23,32 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
   );
   const [copiedLink, setCopiedLink] = useState(false);
 
+  // Sincroniza a origem no navegador de forma reativa caso a porta ou domínio divirja
+  // Executado exclusivamente após a fase de hidratação, garantindo 100% de determinismo no SSR
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.origin) {
+      setOrigin(window.location.origin);
+    }
+  }, []);
+
   const formatCurrency = (val: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
 
-  const formatDate = (dateStr: string) =>
-    new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeStyle: "short" }).format(
-      new Date(dateStr)
-    );
+  // Formatação de data determinística com fuso horário fixado para evitar divergências entre SSR e navegador
+  const formatDate = (dateStr?: string | null) => {
+    if (!dateStr) return "Data não informada";
+    try {
+      const parsed = new Date(dateStr);
+      if (isNaN(parsed.getTime())) return dateStr;
+      return new Intl.DateTimeFormat("pt-BR", {
+        dateStyle: "medium",
+        timeStyle: "short",
+        timeZone: "America/Sao_Paulo",
+      }).format(parsed);
+    } catch {
+      return dateStr;
+    }
+  };
 
   const statusInfo = ORDER_STATUS_MAP[order.status] || ORDER_STATUS_MAP.pending;
 
@@ -65,9 +89,13 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
   };
 
   const handleCopyTrackingLink = async () => {
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const currentOrigin =
+      origin || (typeof window !== "undefined" ? window.location.origin : "");
+    const cleanCurrentOrigin = currentOrigin ? currentOrigin.replace(/\/$/, "") : "";
     const identifier = order.tracking_token || order.id;
-    const trackingUrl = `${origin}/pedido/acompanhar/${identifier}`;
+    const trackingUrl = cleanCurrentOrigin
+      ? `${cleanCurrentOrigin}/pedido/acompanhar/${identifier}`
+      : `/pedido/acompanhar/${identifier}`;
 
     try {
       await navigator.clipboard.writeText(trackingUrl);
@@ -79,9 +107,15 @@ export default function OrderDetailClient({ initialOrder }: OrderDetailClientPro
     }
   };
 
+  // Montagem determinística da URL de acompanhamento para o link do WhatsApp
   const trackingIdentifier = order.tracking_token || order.id;
+  const cleanOrigin = origin ? origin.replace(/\/$/, "") : "";
+  const trackingUrl = cleanOrigin
+    ? `${cleanOrigin}/pedido/acompanhar/${trackingIdentifier}`
+    : `/pedido/acompanhar/${trackingIdentifier}`;
+
   const whatsappMessage = encodeURIComponent(
-    `Olá! Seu pedido ${order.reference} na Use Três Marias teve uma atualização de status:\n\n*Status Atual:* ${statusInfo.label}\n\nVocê pode acompanhar todas as etapas pelo link oficial da loja:\n${typeof window !== "undefined" ? window.location.origin : ""}/pedido/acompanhar/${trackingIdentifier}\n\nEstamos à disposição!`
+    `Olá! Seu pedido ${order.reference} na Use Três Marias teve uma atualização de status:\n\n*Status Atual:* ${statusInfo.label}\n\nVocê pode acompanhar todas as etapas pelo link oficial da loja:\n${trackingUrl}\n\nEstamos à disposição!`
   );
 
   return (

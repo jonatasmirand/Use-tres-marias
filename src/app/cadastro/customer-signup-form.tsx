@@ -7,27 +7,48 @@ import { createAuthClient } from "@/lib/supabase/auth-client";
 import { customerSignUpSchema } from "@/validations/customer-auth-schemas";
 import { sanitizeRedirectUrl } from "@/lib/auth-redirect";
 
-function getSignUpErrorMessage(code: string | undefined, message: string | undefined): string {
-  if (code === "user_already_exists" || message?.toLowerCase().includes("already registered")) {
+function getSignUpErrorMessage(
+  code: string | undefined,
+  message: string | undefined
+): string {
+  if (
+    code === "user_already_exists" ||
+    message?.toLowerCase().includes("already registered")
+  ) {
     return "Este endereço de e-mail já está cadastrado. Você pode entrar diretamente na sua conta.";
   }
-  if (code === "signup_disabled" || message?.toLowerCase().includes("signups not allowed")) {
+
+  if (
+    code === "signup_disabled" ||
+    message?.toLowerCase().includes("signups not allowed")
+  ) {
     return "O cadastro de novos clientes está desativado nas configurações do Supabase (Authentication > Sign In / Up).";
   }
-  if (code === "email_provider_disabled" || message?.toLowerCase().includes("email logins are disabled")) {
+
+  if (
+    code === "email_provider_disabled" ||
+    message?.toLowerCase().includes("email logins are disabled")
+  ) {
     return "O provedor de e-mail está desativado nas configurações do Supabase (Authentication > Providers > Email).";
   }
+
   if (code === "weak_password") {
     return "A senha é muito fraca. Utilize pelo menos 6 caracteres combinando letras e números.";
   }
+
   if (code === "over_request_rate_limit") {
     return "Muitas tentativas em pouco tempo. Por segurança, aguarde alguns minutos.";
   }
-  return message || "Não foi possível concluir seu cadastro. Verifique os dados informados.";
+
+  return (
+    message ||
+    "Não foi possível concluir seu cadastro. Verifique os dados informados."
+  );
 }
 
 export default function CustomerSignUpForm() {
   const searchParams = useSearchParams();
+
   const rawNextUrl = searchParams.get("next") || "";
   const nextUrl = sanitizeRedirectUrl(rawNextUrl, "/cliente", false);
 
@@ -45,6 +66,7 @@ export default function CustomerSignUpForm() {
 
   const handleSignUp = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
     setErrorMessage("");
     setSuccessMessage("");
     setRequiresConfirmation(false);
@@ -57,7 +79,9 @@ export default function CustomerSignUpForm() {
     });
 
     if (!validation.success) {
-      setErrorMessage(validation.error.issues[0]?.message || "Dados inválidos.");
+      setErrorMessage(
+        validation.error.issues[0]?.message || "Dados inválidos."
+      );
       return;
     }
 
@@ -65,14 +89,15 @@ export default function CustomerSignUpForm() {
 
     try {
       const supabase = createAuthClient();
-      const origin = typeof window !== "undefined" ? window.location.origin : "";
-      const emailRedirect = `${origin}/cliente?confirmed=true`;
 
+      // Não definir emailRedirectTo.
+      // O Supabase utilizará a Site URL configurada
+      // em Authentication > URL Configuration,
+      // salvo se o template de confirmação definir outro destino.
       const { data, error } = await supabase.auth.signUp({
         email: validation.data.email,
         password: validation.data.password,
         options: {
-          emailRedirectTo: emailRedirect,
           data: {
             full_name: validation.data.name,
           },
@@ -85,7 +110,7 @@ export default function CustomerSignUpForm() {
       }
 
       if (data.user && !data.session) {
-        // Confirmação de e-mail ativa no Supabase
+        // Confirmação de e-mail ativa no Supabase.
         setRequiresConfirmation(true);
         setSuccessMessage(
           "Conta criada com sucesso! Enviamos um link de confirmação para o seu e-mail. Por favor, verifique sua caixa de entrada para ativar o acesso."
@@ -93,14 +118,14 @@ export default function CustomerSignUpForm() {
         return;
       }
 
-      // Sessão já ativa automaticamente
+      // Sessão já ativa automaticamente.
       setSuccessMessage("Conta criada com sucesso! Entrando...");
 
-      setTimeout(() => {
-        window.location.href = nextUrl;
-      }, 800);
+      window.location.href = nextUrl;
     } catch {
-      setErrorMessage("Erro de comunicação com o servidor. Tente novamente.");
+      setErrorMessage(
+        "Erro de comunicação com o servidor. Tente novamente."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -145,8 +170,10 @@ export default function CustomerSignUpForm() {
             >
               Criar Conta de Cliente
             </h1>
+
             <p className="mt-1.5 text-xs leading-relaxed text-[#5f6863]">
-              Cadastre-se para acompanhar seus pedidos e comprar com rapidez e segurança.
+              Cadastre-se para acompanhar seus pedidos e comprar com rapidez e
+              segurança.
             </p>
           </header>
 
@@ -159,6 +186,7 @@ export default function CustomerSignUpForm() {
               >
                 Nome Completo
               </label>
+
               <input
                 ref={nameRef}
                 autoComplete="name"
@@ -182,6 +210,7 @@ export default function CustomerSignUpForm() {
               >
                 E-mail
               </label>
+
               <input
                 autoComplete="email"
                 className="w-full rounded-xl border border-[#e6e7e4] bg-[#fafbf9] px-3.5 py-2.5 text-sm text-[#202522] placeholder-[#9ea7a2] transition focus:border-[#1f6b4f] focus:bg-white focus:ring-4 focus:ring-[#1f6b4f]/10 focus:outline-none disabled:bg-[#f0f2f0]"
@@ -204,6 +233,7 @@ export default function CustomerSignUpForm() {
               >
                 Senha
               </label>
+
               <div className="relative">
                 <input
                   autoComplete="new-password"
@@ -217,6 +247,7 @@ export default function CustomerSignUpForm() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                 />
+
                 <button
                   aria-label={showPassword ? "Ocultar senha" : "Ver senha"}
                   className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#7f8d85] transition hover:text-[#202522]"
@@ -272,6 +303,7 @@ export default function CustomerSignUpForm() {
               >
                 Confirmar Senha
               </label>
+
               <input
                 autoComplete="new-password"
                 className="w-full rounded-xl border border-[#e6e7e4] bg-[#fafbf9] px-3.5 py-2.5 text-sm text-[#202522] placeholder-[#9ea7a2] transition focus:border-[#1f6b4f] focus:bg-white focus:ring-4 focus:ring-[#1f6b4f]/10 focus:outline-none disabled:bg-[#f0f2f0]"

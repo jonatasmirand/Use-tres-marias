@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getAdminOrderById } from "@/services/order-service";
@@ -36,6 +37,15 @@ export default async function AdminOrderDetailPage({ params }: RouteContext) {
     notFound();
   }
 
+  // Determina a origem base da aplicação no servidor para garantir renderização
+  // determinística do link de acompanhamento e da mensagem de WhatsApp tanto no SSR quanto na hidratação
+  const headerList = await headers();
+  const host = headerList.get("x-forwarded-host") || headerList.get("host") || "";
+  const protocol =
+    headerList.get("x-forwarded-proto") ||
+    (host.startsWith("localhost") || host.startsWith("127.0.0.1") ? "http" : "https");
+  const origin = host ? `${protocol}://${host}` : "";
+
   return (
     <div className="mx-auto max-w-[1000px] space-y-6">
       {/* Topo de navegação */}
@@ -50,7 +60,7 @@ export default async function AdminOrderDetailPage({ params }: RouteContext) {
       </div>
 
       {/* Componente Cliente Interativo para Gerenciamento de Status */}
-      <OrderDetailClient initialOrder={order} />
+      <OrderDetailClient initialOrder={order} initialOrigin={origin} />
     </div>
   );
 }
