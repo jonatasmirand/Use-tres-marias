@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { getAdminSession } from "@/services/auth-service";
 import AdminLogoutButton from "@/components/admin/AdminLogoutButton";
@@ -10,7 +9,6 @@ interface AdminLayoutProps {
 }
 
 export default async function AdminLayout({ children }: AdminLayoutProps) {
-   await connection();
   const session = await getAdminSession();
 
   if (!session) {
@@ -113,6 +111,20 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
           </Link>
 
           <div className="pt-4 px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[#7f8d85]">
+            Acessos & Contas
+          </div>
+
+          <Link
+            href="/admin/contas"
+            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold text-[#202522] transition hover:bg-[#eaf3ee] hover:text-[#1f6b4f]"
+          >
+            <svg className="size-4 shrink-0 text-[#1f6b4f]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            <span>Gerenciar Contas</span>
+          </Link>
+
+          <div className="pt-4 px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[#7f8d85]">
             Atendimento & Loja
           </div>
 
@@ -169,8 +181,14 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
 
           <div className="flex items-center gap-2">
             <Link
-              href="/admin/pedidos"
+              href="/admin/contas"
               className="rounded-lg bg-[#eaf3ee] px-2.5 py-1 text-xs font-semibold text-[#1f6b4f]"
+            >
+              Contas
+            </Link>
+            <Link
+              href="/admin/pedidos"
+              className="rounded-lg border border-[#e6e7e4] bg-white px-2.5 py-1 text-xs font-semibold text-[#202522]"
             >
               Pedidos
             </Link>
@@ -179,12 +197,6 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
               className="rounded-lg border border-[#e6e7e4] bg-white px-2.5 py-1 text-xs font-semibold text-[#202522]"
             >
               Contato
-            </Link>
-            <Link
-              href="/admin/paginas/home-hero"
-              className="rounded-lg border border-[#e6e7e4] bg-white px-2.5 py-1 text-xs font-semibold text-[#202522]"
-            >
-              Editor
             </Link>
             <Link
               href="/"

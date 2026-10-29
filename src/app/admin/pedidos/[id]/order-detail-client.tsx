@@ -152,7 +152,11 @@ export default function OrderDetailClient({
             </button>
 
             <a
-              href={`https://wa.me/?text=${whatsappMessage}`}
+              href={
+                order.customer_phone?.replace(/\D/g, "")
+                  ? `https://wa.me/${order.customer_phone.replace(/\D/g, "")}?text=${whatsappMessage}`
+                  : `https://wa.me/?text=${whatsappMessage}`
+              }
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs px-3 py-1.5 bg-[#25D366] text-white rounded-lg font-bold hover:bg-[#20ba5a] transition flex items-center gap-1.5"

@@ -7,6 +7,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import ProductDetailView from "@/components/catalog/ProductDetailView";
 import { getProductBySlug } from "@/services/product-service";
+import { getContactSettings } from "@/services/contact-service";
 
 type RouteContext = {
   params: Promise<{ slug: string }>;
@@ -45,7 +46,10 @@ export async function generateMetadata({
 }
 
 async function ProductContent({ slug }: { slug: string }) {
-  const product = await getCachedProductBySlug(slug);
+  const [product, contact] = await Promise.all([
+    getCachedProductBySlug(slug),
+    getContactSettings(),
+  ]);
 
   if (!product) {
     notFound();
@@ -81,7 +85,7 @@ async function ProductContent({ slug }: { slug: string }) {
           __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
         }}
       />
-      <ProductDetailView product={product} />
+      <ProductDetailView product={product} whatsappNumber={contact.whatsapp_number} />
     </>
   );
 }

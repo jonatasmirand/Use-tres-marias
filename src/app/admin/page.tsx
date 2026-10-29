@@ -23,7 +23,7 @@ export default async function AdminDashboardPage() {
             Painel de Controle do CMS
           </h1>
           <p className="mt-1 text-xs text-[#5f6863]">
-            Gerencie o conteúdo dinâmico, seções da Home e campanhas da Use Três Marias.
+            Gerencie o conteúdo dinâmico, seções da Home, contas e campanhas da Use Três Marias.
           </p>
         </div>
 
@@ -36,6 +36,15 @@ export default async function AdminDashboardPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
             </svg>
             <span>Gerenciar Produtos</span>
+          </Link>
+          <Link
+            href="/admin/contas"
+            className="inline-flex items-center gap-2 rounded-xl border border-[#e6e7e4] bg-white px-4 py-2.5 text-xs font-semibold text-[#202522] shadow-sm transition hover:bg-[#fafbf9]"
+          >
+            <svg className="size-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            <span>Gerenciar Contas</span>
           </Link>
           <Link
             href="/admin/paginas/home-hero"

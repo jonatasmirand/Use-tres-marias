@@ -6,6 +6,7 @@ import Image from "next/image";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { getPublicOrderTracking } from "@/services/order-service";
+import { getContactSettings } from "@/services/contact-service";
 import { OrderStatus } from "@/types/order";
 
 type RouteContext = {
@@ -135,7 +136,10 @@ async function OrderTrackingContent({ params }: RouteContext) {
       currency: "BRL",
     }).format(val);
 
-  const whatsappSupportUrl = `https://wa.me/5511999999999?text=${encodeURIComponent(
+  const contact = await getContactSettings();
+  const cleanPhone = contact.whatsapp_number.replace(/\D/g, "") || "5511999999999";
+
+  const whatsappSupportUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(
     `Olá, equipe useTrêsMarias! Gostaria de falar sobre o meu pedido ${tracking.reference}.`
   )}`;
 

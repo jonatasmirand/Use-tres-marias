@@ -11,33 +11,42 @@ function getSignUpErrorMessage(
   code: string | undefined,
   message: string | undefined
 ): string {
+  const normalizedMsg = message?.toLowerCase() || "";
+  const normalizedCode = code?.toLowerCase() || "";
+
   if (
-    code === "user_already_exists" ||
-    message?.toLowerCase().includes("already registered")
+    normalizedCode === "user_already_exists" ||
+    normalizedMsg.includes("already registered") ||
+    normalizedMsg.includes("already exists")
   ) {
     return "Este endereço de e-mail já está cadastrado. Você pode entrar diretamente na sua conta.";
   }
 
   if (
-    code === "signup_disabled" ||
-    message?.toLowerCase().includes("signups not allowed")
+    normalizedCode === "signup_disabled" ||
+    normalizedMsg.includes("signups not allowed")
   ) {
     return "O cadastro de novos clientes está desativado nas configurações do Supabase (Authentication > Sign In / Up).";
   }
 
   if (
-    code === "email_provider_disabled" ||
-    message?.toLowerCase().includes("email logins are disabled")
+    normalizedCode === "email_provider_disabled" ||
+    normalizedMsg.includes("email logins are disabled")
   ) {
     return "O provedor de e-mail está desativado nas configurações do Supabase (Authentication > Providers > Email).";
   }
 
-  if (code === "weak_password") {
+  if (normalizedCode === "weak_password") {
     return "A senha é muito fraca. Utilize pelo menos 6 caracteres combinando letras e números.";
   }
 
-  if (code === "over_request_rate_limit") {
-    return "Muitas tentativas em pouco tempo. Por segurança, aguarde alguns minutos.";
+  if (
+    normalizedCode === "over_email_send_rate_limit" ||
+    normalizedCode === "over_request_rate_limit" ||
+    normalizedMsg.includes("rate limit") ||
+    normalizedMsg.includes("rate-limit")
+  ) {
+    return "Limite de envio de e-mails do Supabase atingido (cota gratuita de 3 envios/hora). Para permitir cadastros ilimitados sem confirmação por e-mail, desative a opção 'Confirm email' no painel do Supabase (Authentication > Providers > Email).";
   }
 
   return (
@@ -88,6 +97,47 @@ export default function CustomerSignUpForm() {
     setIsSubmitting(true);
 
     try {
+      // 1. Tenta cadastro direto no backend (evita rate-limit se houver service role key)
+      const registerRes = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: validation.data.name,
+          email: validation.data.email,
+          password: validation.data.password,
+          confirmPassword: validation.data.confirmPassword,
+        }),
+      });
+
+      const registerData = await registerRes.json();
+
+      if (registerRes.ok && registerData.success) {
+        // Usuário criado com sucesso no servidor. Inicia sessão imediatamente:
+        const supabase = createAuthClient();
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: validation.data.email,
+          password: validation.data.password,
+        });
+
+        if (signInError) {
+          setSuccessMessage("Conta criada com sucesso! Redirecionando para o login...");
+          setTimeout(() => {
+            window.location.href = `/login?next=${encodeURIComponent(nextUrl)}`;
+          }, 1000);
+          return;
+        }
+
+        setSuccessMessage("Conta criada com sucesso! Entrando...");
+        window.location.href = nextUrl;
+        return;
+      }
+
+      if (!registerData.useClientFallback) {
+        setErrorMessage(registerData.error || "Não foi possível concluir seu cadastro.");
+        return;
+      }
+
+      // 2. Fallback: Cadastro via cliente do Supabase
       const supabase = createAuthClient();
 
       // Não definir emailRedirectTo.

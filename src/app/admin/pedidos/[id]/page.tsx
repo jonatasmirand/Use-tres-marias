@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getAdminOrderById } from "@/services/order-service";
+import { getDynamicSiteUrl } from "@/lib/site-url";
 import OrderDetailClient from "./order-detail-client";
 
 export const instant = false;
@@ -37,14 +38,10 @@ export default async function AdminOrderDetailPage({ params }: RouteContext) {
     notFound();
   }
 
-  // Determina a origem base da aplicação no servidor para garantir renderização
-  // determinística do link de acompanhamento e da mensagem de WhatsApp tanto no SSR quanto na hidratação
+  // Determina dinamicamente a origem do site (configurada no Supabase ou via host de produção)
   const headerList = await headers();
   const host = headerList.get("x-forwarded-host") || headerList.get("host") || "";
-  const protocol =
-    headerList.get("x-forwarded-proto") ||
-    (host.startsWith("localhost") || host.startsWith("127.0.0.1") ? "http" : "https");
-  const origin = host ? `${protocol}://${host}` : "";
+  const origin = await getDynamicSiteUrl(host);
 
   return (
     <div className="mx-auto max-w-[1000px] space-y-6">

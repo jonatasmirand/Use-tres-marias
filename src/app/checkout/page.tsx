@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getContactSettings } from "@/services/contact-service";
 import CheckoutClient from "./checkout-client";
 
 export const instant = false;
@@ -32,5 +33,12 @@ export default async function CheckoutPage() {
       "",
   };
 
-  return <CheckoutClient customer={initialCustomer} />;
+  const contact = await getContactSettings();
+
+  return (
+    <CheckoutClient
+      customer={initialCustomer}
+      whatsappNumber={contact.whatsapp_number}
+    />
+  );
 }

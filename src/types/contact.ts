@@ -11,6 +11,7 @@ export interface ContactSettings {
   business_hours: string;
   whatsapp_group_url?: string;
   address_summary?: string;
+  site_url?: string;
   updated_at?: string;
   updated_by?: string;
 }

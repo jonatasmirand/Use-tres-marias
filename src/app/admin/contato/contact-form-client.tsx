@@ -17,6 +17,7 @@ export default function ContactFormClient({ initialSettings }: ContactFormClient
     business_hours: initialSettings.business_hours || "Segunda a Sexta: 09h às 18h | Sábado: 09h às 13h",
     whatsapp_group_url: initialSettings.whatsapp_group_url || "",
     address_summary: initialSettings.address_summary || "São Paulo - SP • Atendimento Online para todo o Brasil",
+    site_url: initialSettings.site_url || "https://use-tres-marias.vercel.app",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -79,6 +80,7 @@ export default function ContactFormClient({ initialSettings }: ContactFormClient
           business_hours: data.contact.business_hours,
           whatsapp_group_url: data.contact.whatsapp_group_url || "",
           address_summary: data.contact.address_summary || "",
+          site_url: data.contact.site_url || "https://use-tres-marias.vercel.app",
         });
       }
     } catch (err) {
@@ -293,6 +295,33 @@ export default function ContactFormClient({ initialSettings }: ContactFormClient
                   placeholder="São Paulo - SP • Atendimento Online para todo o Brasil"
                   className="w-full rounded-xl border border-[#e6e7e4] bg-[#fafbf9] px-3.5 py-2.5 text-xs text-[#202522] focus:border-[#1f6b4f] focus:bg-white focus:outline-none transition"
                 />
+              </div>
+            </div>
+
+            <hr className="border-[#f0f2f0]" />
+
+            {/* Bloco 4: Domínio e Links de Produção (Visualização e Acompanhamento) */}
+            <div className="space-y-4">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-[#183428] flex items-center gap-2">
+                <span className="text-base">🌐</span>
+                <span>Domínio & Links de Visualização</span>
+              </h2>
+
+              <div>
+                <label className="block text-xs font-bold text-[#202522] mb-1.5">
+                  URL Base do Site / Domínio Oficial (Supabase & Vercel)
+                </label>
+                <input
+                  type="url"
+                  name="site_url"
+                  value={formData.site_url}
+                  onChange={handleChange}
+                  placeholder="https://use-tres-marias.vercel.app"
+                  className="w-full rounded-xl border border-[#e6e7e4] bg-[#fafbf9] px-3.5 py-2.5 text-xs text-[#202522] font-mono focus:border-[#1f6b4f] focus:bg-white focus:outline-none transition"
+                />
+                <p className="text-[11px] text-[#7f8d85] mt-1.5">
+                  Endereço público usado para gerar links de acompanhamento no WhatsApp e compartilhamentos. Suporta o endereço da Vercel (ex: <code className="bg-[#f0f2f0] px-1 py-0.5 rounded">https://use-tres-marias.vercel.app</code>) ou domínios próprios configurados no Supabase.
+                </p>
               </div>
             </div>
 

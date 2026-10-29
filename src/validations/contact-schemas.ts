@@ -95,6 +95,12 @@ export const contactSettingsSchema = z.object({
     .max(250, "O endereço deve ter no máximo 250 caracteres.")
     .optional()
     .default("São Paulo - SP • Atendimento Online para todo o Brasil"),
+  site_url: z
+    .string()
+    .trim()
+    .url("A URL do site deve ser uma URL válida (ex: https://use-tres-marias.vercel.app).")
+    .optional()
+    .or(z.literal("")),
 });
 
 export function validateContactSettings(data: unknown): ValidationResult<UpdateContactSettingsInput> {
@@ -126,6 +132,7 @@ export function validateContactSettings(data: unknown): ValidationResult<UpdateC
       validated.business_hours || "Segunda a Sexta: 09h às 18h | Sábado: 09h às 13h",
     whatsapp_group_url: validated.whatsapp_group_url || undefined,
     address_summary: validated.address_summary || "São Paulo - SP • Atendimento Online para todo o Brasil",
+    site_url: validated.site_url?.trim() ? validated.site_url.trim().replace(/\/$/, "") : undefined,
   };
 
   return {

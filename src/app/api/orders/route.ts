@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { validateCreateOrderInput } from "@/validations/order-schemas";
 import { createOrder } from "@/services/order-service";
+import { getDynamicSiteUrl } from "@/lib/site-url";
 
 export async function POST(request: Request) {
   try {
@@ -47,11 +48,12 @@ export async function POST(request: Request) {
       validation.data.customer_name = metaName;
     }
 
-    const origin =
+    const rawOrigin =
       request.headers.get("origin") ||
       request.headers.get("x-forwarded-host") ||
       new URL(request.url).origin;
 
+    const origin = await getDynamicSiteUrl(rawOrigin);
     const result = await createOrder(validation.data, origin);
 
     return NextResponse.json(result, { status: 201 });

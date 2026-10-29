@@ -19,17 +19,29 @@ function getAuthErrorMessage(code: string | undefined, message: string | undefin
   if (code === "over_request_rate_limit") {
     return "Muitas tentativas em sequência. Por segurança, aguarde alguns minutos.";
   }
+  if (
+    code === "user_banned" ||
+    message?.toLowerCase().includes("banned") ||
+    message?.toLowerCase().includes("blocked")
+  ) {
+    return "Esta conta foi suspensa ou desativada pela administração. Entre em contato com o suporte.";
+  }
   return message || "Não foi possível validar o acesso. Verifique suas credenciais e tente novamente.";
 }
 
 export default function LoginForm() {
   const searchParams = useSearchParams();
   const nextUrl = searchParams.get("next") || "";
+  const errorParam = searchParams.get("error");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState(
+    errorParam === "blocked"
+      ? "Esta conta foi suspensa ou desativada pela administração. Entre em contato com o suporte."
+      : ""
+  );
   const [successMessage, setSuccessMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resetSent, setResetSent] = useState(false);
@@ -86,6 +98,16 @@ export default function LoginForm() {
       if (!data.user || !data.session) {
         setErrorMessage(
           "O serviço de autenticação não confirmou a sessão. Tente novamente."
+        );
+        return;
+      }
+
+      // Verificação de segurança: conta desativada ou suspensa
+      if (data.user.app_metadata?.is_blocked) {
+        await supabase.auth.signOut();
+        await fetch("/api/auth/logout", { method: "POST" });
+        setErrorMessage(
+          "Esta conta foi suspensa ou desativada pela administração. Entre em contato com o suporte."
         );
         return;
       }

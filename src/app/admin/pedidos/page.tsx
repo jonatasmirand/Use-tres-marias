@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { getAdminOrders } from "@/services/order-service";
+import { getDynamicSiteUrl } from "@/lib/site-url";
 import { ORDER_STATUS_MAP, OrderStatus } from "@/types/order";
 import OrdersTableClient from "./orders-table-client";
 
@@ -34,6 +36,10 @@ export default async function AdminPedidosPage({ searchParams }: RouteContext) {
     search: busca,
   });
 
+  const headerList = await headers();
+  const host = headerList.get("x-forwarded-host") || headerList.get("host") || "";
+  const siteUrl = await getDynamicSiteUrl(host);
+
   return (
     <div className="mx-auto max-w-[1200px] space-y-6">
       {/* Cabeçalho da Página */}
@@ -62,6 +68,7 @@ export default async function AdminPedidosPage({ searchParams }: RouteContext) {
         initialOrders={orders}
         currentFilter={filtro || (status ? status : "todos")}
         currentSearch={busca || ""}
+        siteUrl={siteUrl}
       />
     </div>
   );

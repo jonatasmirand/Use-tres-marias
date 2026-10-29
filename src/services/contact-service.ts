@@ -16,6 +16,7 @@ export const DEFAULT_CONTACT_SETTINGS: ContactSettings = {
   business_hours: "Segunda a Sexta: 09h às 18h | Sábado: 09h às 13h",
   whatsapp_group_url: "https://chat.whatsapp.com/invite/usetresmarias",
   address_summary: "São Paulo - SP • Atendimento Online para todo o Brasil",
+  site_url: "https://use-tres-marias.vercel.app",
   updated_at: "2026-10-27T12:00:00.000Z",
 };
 
@@ -88,6 +89,7 @@ export async function updateContactSettings(
           business_hours: updatedSettings.business_hours,
           whatsapp_group_url: updatedSettings.whatsapp_group_url || null,
           address_summary: updatedSettings.address_summary || null,
+          site_url: updatedSettings.site_url || null,
         },
         updated_at: now,
         updated_by: updatedByUserId || null,

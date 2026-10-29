@@ -8,11 +8,12 @@ import { useCart } from "@/context/CartContext";
 
 interface ProductDetailViewProps {
   product: Product;
+  whatsappNumber?: string;
 }
 
 const WHATSAPP_PHONE = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "5511999999999";
 
-export default function ProductDetailView({ product }: ProductDetailViewProps) {
+export default function ProductDetailView({ product, whatsappNumber }: ProductDetailViewProps) {
   const { addItem } = useCart();
   const images = product.images.length > 0 ? product.images : [
     "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=900&q=80",
@@ -188,7 +189,7 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
             </button>
 
             <a
-              href={`https://wa.me/${WHATSAPP_PHONE}?text=${whatsappMessage}`}
+              href={`https://wa.me/${(whatsappNumber || WHATSAPP_PHONE).replace(/\D/g, "")}?text=${whatsappMessage}`}
               target="_blank"
               rel="noopener noreferrer"
               className="w-full text-center rounded-xl border border-[#d2e5db] bg-[#eaf3ee] py-3 text-xs font-bold uppercase tracking-widest text-[#1f6b4f] transition hover:bg-[#d8ecdf]"

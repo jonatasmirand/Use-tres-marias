@@ -8,12 +8,14 @@ interface OrdersTableClientProps {
   initialOrders: Order[];
   currentFilter: string;
   currentSearch: string;
+  siteUrl?: string;
 }
 
 export default function OrdersTableClient({
   initialOrders,
   currentFilter,
   currentSearch,
+  siteUrl,
 }: OrdersTableClientProps) {
   const [filter, setFilter] = useState(currentFilter);
   const [search, setSearch] = useState(currentSearch);
@@ -50,7 +52,8 @@ export default function OrdersTableClient({
   const handleCopyLink = async (order: Order) => {
     // Para pedidos que têm token gerado, podemos usar o path padrão
     const identifier = order.tracking_token || order.id;
-    const trackingUrl = `${origin}/pedido/acompanhar/${identifier}`;
+    const baseDomain = siteUrl ? siteUrl.replace(/\/$/, "") : origin;
+    const trackingUrl = `${baseDomain}/pedido/acompanhar/${identifier}`;
 
     try {
       await navigator.clipboard.writeText(trackingUrl);

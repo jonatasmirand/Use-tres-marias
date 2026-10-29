@@ -53,12 +53,19 @@ export async function middleware(request: NextRequest) {
 
   // Papel de administrador obtido estritamente do app_metadata (fonte segura e imutável pelo cliente)
   const isAdmin = user?.app_metadata?.role === "admin";
+  const isBlocked = Boolean(user?.app_metadata?.is_blocked);
 
   const isAccessingAdmin = pathname.startsWith("/admin");
   const isAccessingAdminApi = pathname.startsWith("/api/admin");
   const isLoginPage = pathname === "/login";
   const isCadastroPage = pathname === "/cadastro";
   const isClienteRoute = pathname === "/cliente" || pathname.startsWith("/cliente/");
+
+  // Bloqueio de contas suspensas em rotas privadas
+  const isPrivateRoute = isAccessingAdmin || isClienteRoute || pathname.startsWith("/checkout");
+  if (user && isBlocked && isPrivateRoute) {
+    return NextResponse.redirect(new URL("/login?error=blocked", request.url));
+  }
 
   // 2. Proteção do Painel Administrativo (/admin e /api/admin/*)
   if (isAccessingAdminApi && !isAdmin) {

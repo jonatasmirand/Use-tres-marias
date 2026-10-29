@@ -7,8 +7,8 @@ export interface AdminSession {
 
 /**
  * Obtém e valida a sessão administrativa no servidor de forma segura.
- * Retorna AdminSession se o usuário for válido e tiver app_metadata.role === 'admin'.
- * Retorna null se não autenticado ou não autorizado.
+ * Retorna AdminSession se o usuário for válido, tiver app_metadata.role === 'admin' e não estiver bloqueado.
+ * Retorna null se não autenticado, não autorizado ou bloqueado.
  */
 export async function getAdminSession(): Promise<AdminSession | null> {
   try {
@@ -21,7 +21,7 @@ export async function getAdminSession(): Promise<AdminSession | null> {
 
     // Valida se o usuário tem a permissão de administrador no app_metadata (protegido pelo Supabase)
     const userRole = user.app_metadata?.role;
-    if (userRole !== "admin") {
+    if (userRole !== "admin" || user.app_metadata?.is_blocked) {
       return null;
     }
 

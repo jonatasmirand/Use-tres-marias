@@ -13,6 +13,7 @@ interface CheckoutClientProps {
     email: string;
     name: string;
   };
+  whatsappNumber?: string;
 }
 
 interface ConfirmedOrder {
@@ -23,7 +24,7 @@ interface ConfirmedOrder {
   whatsappUrl: string;
 }
 
-export default function CheckoutClient({ customer }: CheckoutClientProps) {
+export default function CheckoutClient({ customer, whatsappNumber }: CheckoutClientProps) {
   const { items, totalPrice, clearCart } = useCart();
 
   const [customerName, setCustomerName] = useState(customer.name);
@@ -110,7 +111,8 @@ ${data.trackingUrl}
 
 Poderiam me enviar os dados para pagamento e prazo de envio? Obrigado!`;
 
-      const whatsappUrl = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(text)}`;
+      const cleanPhone = (whatsappNumber || WHATSAPP_PHONE).replace(/\D/g, "");
+      const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`;
 
       // Limpa sacola somente após sucesso
       clearCart();
