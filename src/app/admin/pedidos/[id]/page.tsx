@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
 import { headers } from "next/headers";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import { getAdminSession } from "@/services/auth-service";
 import { getAdminOrderById } from "@/services/order-service";
 import { getDynamicSiteUrl } from "@/lib/site-url";
 import OrderDetailClient from "./order-detail-client";
@@ -31,6 +32,11 @@ export async function generateMetadata({ params }: RouteContext): Promise<Metada
 
 export default async function AdminOrderDetailPage({ params }: RouteContext) {
   await connection();
+  const session = await getAdminSession();
+  if (!session) {
+    redirect("/login");
+  }
+
   const { id } = await params;
 
   const order = await getAdminOrderById(id);

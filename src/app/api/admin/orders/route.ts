@@ -11,15 +11,38 @@ export async function GET(request: Request) {
     const statusParam = searchParams.get("status") as OrderStatus | "all" | null;
     const filterParam = searchParams.get("filtro"); // "ativos" | "concluidos" | "todos"
     const search = searchParams.get("busca") || undefined;
+    const clienteId = searchParams.get("clienteId") || undefined;
+    const clienteEmail = searchParams.get("clienteEmail") || undefined;
 
-    const orders = await getAdminOrders({
+    const result = await getAdminOrders({
       status: statusParam || undefined,
       activeOnly: filterParam === "ativos",
       completedOnly: filterParam === "concluidos",
       search,
+      clienteId,
+      clienteEmail,
     });
 
-    return NextResponse.json({ success: true, data: orders }, { status: 200 });
+    if (result.error) {
+      return NextResponse.json(
+        { success: false, error: result.error },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: result.orders,
+        meta: {
+          total: result.total,
+          activeCount: result.activeCount,
+          completedCount: result.completedCount,
+          statusCounts: result.statusCounts,
+        },
+      },
+      { status: 200 }
+    );
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") {
       return NextResponse.json(

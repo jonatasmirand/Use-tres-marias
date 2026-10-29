@@ -446,11 +446,12 @@ export default function AccountsTableClient({
                         {isCustomer ? (
                           user.orders_count && user.orders_count > 0 ? (
                             <Link
-                              href={`/admin/pedidos?busca=${encodeURIComponent(user.email)}`}
-                              className="text-xs font-semibold text-[#1f6b4f] hover:underline"
-                              title="Ver pedidos deste cliente"
+                              href={`/admin/pedidos?clienteId=${encodeURIComponent(user.id)}&clienteEmail=${encodeURIComponent(user.email)}&clienteNome=${encodeURIComponent(user.name)}`}
+                              className="text-xs font-semibold text-[#1f6b4f] hover:underline inline-flex items-center gap-1"
+                              title={`Ver pedidos de ${user.name} (${user.email})`}
                             >
-                              {user.orders_count} {user.orders_count === 1 ? "pedido" : "pedidos"} →
+                              <span>{user.orders_count} {user.orders_count === 1 ? "pedido" : "pedidos"}</span>
+                              <span aria-hidden="true">→</span>
                             </Link>
                           ) : (
                             <span className="text-[11px] text-[#7a857f]">0 pedidos</span>

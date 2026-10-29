@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import { createClient } from "@/lib/supabase/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
@@ -5,107 +7,289 @@ import {
   GetUsersFilter,
   GetUsersResponse,
   InviteAdminInput,
+  UserRole,
+  UserStatus,
 } from "@/types/user";
 
 /**
- * Armazenamento em memória para resiliência de desenvolvimento local e testes.
+ * Diretório e arquivo para persistência resiliente em disco local de contas sincronizadas.
+ */
+const DISK_CACHE_DIR = path.join(process.cwd(), "src", "data");
+const DISK_CACHE_FILE = path.join(DISK_CACHE_DIR, "synced-accounts.json");
+
+/**
+ * Armazenamento em memória para resiliência durante o ciclo de vida da aplicação.
  */
 const memoryUsersFallback = new Map<string, ManagedUser>();
 
-// Usuários iniciais de demonstração para testes e resiliência
+/**
+ * Usuários iniciais de demonstração (exibidos APENAS enquanto não houver contas reais registradas).
+ */
+const INITIAL_DEMO_USERS: ManagedUser[] = [
+  {
+    id: "usr-admin-principal",
+    email: "admin@usetresmarias.com.br",
+    name: "Administrador Geral",
+    role: "admin",
+    status: "active",
+    created_at: "2026-10-25T10:00:00.000Z",
+    last_sign_in_at: "2026-10-29T08:00:00.000Z",
+    orders_count: 0,
+  },
+  {
+    id: "usr-cliente-mariana",
+    email: "mariana.silva@exemplo.com",
+    name: "Mariana Silva",
+    role: "customer",
+    status: "active",
+    created_at: "2026-10-27T14:30:00.000Z",
+    last_sign_in_at: "2026-10-28T19:00:00.000Z",
+    orders_count: 3,
+  },
+  {
+    id: "usr-cliente-carolina",
+    email: "carolina.mendes@exemplo.com",
+    name: "Carolina Mendes",
+    role: "customer",
+    status: "active",
+    created_at: "2026-10-28T09:15:00.000Z",
+    last_sign_in_at: "2026-10-28T11:45:00.000Z",
+    orders_count: 1,
+  },
+  {
+    id: "usr-cliente-juliana",
+    email: "juliana.costa@exemplo.com",
+    name: "Juliana Costa",
+    role: "customer",
+    status: "blocked",
+    created_at: "2026-10-26T16:20:00.000Z",
+    last_sign_in_at: "2026-10-27T10:10:00.000Z",
+    orders_count: 0,
+    blocked_at: "2026-10-28T12:00:00.000Z",
+    blocked_reason: "Suspeita de atividade fraudulenta",
+  },
+];
+
+function readDiskCache(): Map<string, ManagedUser> {
+  const map = new Map<string, ManagedUser>();
+  try {
+    if (fs.existsSync(DISK_CACHE_FILE)) {
+      const raw = fs.readFileSync(DISK_CACHE_FILE, "utf-8");
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        parsed.forEach((u) => {
+          if (u && u.id && u.email) map.set(u.id, u);
+        });
+      } else if (parsed && typeof parsed === "object") {
+        Object.values(parsed).forEach((u: any) => {
+          if (u && u.id && u.email) map.set(u.id, u);
+        });
+      }
+    }
+  } catch {
+    // Falha silenciosa em caso de restrição de leitura ou ambiente serverless read-only
+  }
+  return map;
+}
+
+function writeDiskCache(map: Map<string, ManagedUser>): void {
+  try {
+    if (!fs.existsSync(DISK_CACHE_DIR)) {
+      fs.mkdirSync(DISK_CACHE_DIR, { recursive: true });
+    }
+    const array = Array.from(map.values());
+    fs.writeFileSync(DISK_CACHE_FILE, JSON.stringify(array, null, 2), "utf-8");
+  } catch {
+    // Falha silenciosa em caso de restrição de escrita
+  }
+}
+
 function initializeFallbackUsers() {
   if (memoryUsersFallback.size > 0) return;
 
-  const initialUsers: ManagedUser[] = [
-    {
-      id: "usr-admin-principal",
-      email: "admin@usetresmarias.com.br",
-      name: "Administrador Geral",
-      role: "admin",
-      status: "active",
-      created_at: "2026-10-25T10:00:00.000Z",
-      last_sign_in_at: "2026-10-29T08:00:00.000Z",
-      orders_count: 0,
-    },
-    {
-      id: "usr-cliente-mariana",
-      email: "mariana.silva@exemplo.com",
-      name: "Mariana Silva",
-      role: "customer",
-      status: "active",
-      created_at: "2026-10-27T14:30:00.000Z",
-      last_sign_in_at: "2026-10-28T19:00:00.000Z",
-      orders_count: 3,
-    },
-    {
-      id: "usr-cliente-carolina",
-      email: "carolina.mendes@exemplo.com",
-      name: "Carolina Mendes",
-      role: "customer",
-      status: "active",
-      created_at: "2026-10-28T09:15:00.000Z",
-      last_sign_in_at: "2026-10-28T11:45:00.000Z",
-      orders_count: 1,
-    },
-    {
-      id: "usr-cliente-juliana",
-      email: "juliana.costa@exemplo.com",
-      name: "Juliana Costa",
-      role: "customer",
-      status: "blocked",
-      created_at: "2026-10-26T16:20:00.000Z",
-      last_sign_in_at: "2026-10-27T10:10:00.000Z",
-      orders_count: 0,
-      blocked_at: "2026-10-28T12:00:00.000Z",
-      blocked_reason: "Suspeita de atividade fraudulenta",
-    },
-  ];
-
-  initialUsers.forEach((u) => memoryUsersFallback.set(u.id, u));
+  const diskAccounts = readDiskCache();
+  if (diskAccounts.size > 0) {
+    diskAccounts.forEach((u) => memoryUsersFallback.set(u.id, u));
+  } else {
+    INITIAL_DEMO_USERS.forEach((u) => memoryUsersFallback.set(u.id, u));
+  }
 }
 
 initializeFallbackUsers();
 
 /**
- * Consulta a contagem de pedidos por cliente a partir da tabela orders.
+ * Registra ou atualiza um usuário autenticado na base gerenciada de contas.
+ * Sincroniza simultaneamente no cache em memória, no cache local persistente em disco
+ * e na tabela site_settings no Supabase.
  */
-async function getOrdersCountMap(): Promise<Map<string, number>> {
-  const counts = new Map<string, number>();
+export async function syncAuthenticatedUser(user: {
+  id: string;
+  email: string;
+  name?: string;
+  role?: "admin" | "customer";
+  status?: "active" | "blocked";
+  created_at?: string;
+  last_sign_in_at?: string | null;
+}): Promise<void> {
+  if (!user.id || !user.email) return;
+
+  const now = new Date().toISOString();
+  const existing = memoryUsersFallback.get(user.id);
+
+  const managed: ManagedUser = {
+    id: user.id,
+    email: user.email.toLowerCase().trim(),
+    name: user.name?.trim() || existing?.name || user.email.split("@")[0] || "Cliente",
+    role: user.role || existing?.role || "customer",
+    status: user.status || existing?.status || "active",
+    created_at: user.created_at || existing?.created_at || now,
+    last_sign_in_at: user.last_sign_in_at || now,
+    orders_count: existing?.orders_count || 0,
+    blocked_at: existing?.blocked_at || null,
+    blocked_reason: existing?.blocked_reason || null,
+  };
+
+  memoryUsersFallback.set(user.id, managed);
+
+  // 1. Grava no cache em disco local para persistência de desenvolvimento
+  const diskAccounts = readDiskCache();
+  diskAccounts.set(user.id, managed);
+  writeDiskCache(diskAccounts);
+
+  // 2. Tenta sincronizar com a tabela site_settings no Supabase
   try {
     const supabase = await createClient();
+    const { data } = await supabase
+      .from("site_settings")
+      .select("value")
+      .eq("key", "synced_accounts")
+      .maybeSingle();
+
+    const currentMap: Record<string, ManagedUser> =
+      data && data.value && typeof data.value === "object"
+        ? (data.value as Record<string, ManagedUser>)
+        : {};
+
+    currentMap[user.id] = managed;
+
+    await supabase.from("site_settings").upsert({
+      key: "synced_accounts",
+      value: currentMap,
+      updated_at: now,
+    });
+  } catch {
+    // Continua normalmente em caso de falha de rede/permissão RLS
+  }
+}
+
+/**
+ * Consulta a contagem de pedidos e descobre clientes da tabela orders.
+ */
+interface OrdersData {
+  countsMap: Map<string, number>;
+  orderCustomers: Map<string, ManagedUser>;
+}
+
+async function getOrdersAndCustomersData(): Promise<OrdersData> {
+  const countsMap = new Map<string, number>();
+  const orderCustomers = new Map<string, ManagedUser>();
+
+  try {
+    const adminClient = getSupabaseAdminClient();
+    const supabase = adminClient || (await createClient());
     const { data, error } = await supabase
       .from("orders")
-      .select("user_id, customer_email");
+      .select("id, user_id, customer_email, customer_name, created_at");
 
     if (!error && Array.isArray(data)) {
       for (const row of data) {
         if (row.user_id) {
-          counts.set(row.user_id, (counts.get(row.user_id) || 0) + 1);
+          countsMap.set(row.user_id, (countsMap.get(row.user_id) || 0) + 1);
         }
         if (row.customer_email) {
-          const emailKey = `email:${row.customer_email.toLowerCase()}`;
-          counts.set(emailKey, (counts.get(emailKey) || 0) + 1);
+          const cleanEmail = row.customer_email.toLowerCase().trim();
+          const emailKey = `email:${cleanEmail}`;
+          countsMap.set(emailKey, (countsMap.get(emailKey) || 0) + 1);
+
+          const customerKey = row.user_id || `order-${cleanEmail}`;
+          if (!orderCustomers.has(customerKey)) {
+            orderCustomers.set(customerKey, {
+              id: customerKey,
+              email: cleanEmail,
+              name: row.customer_name?.trim() || cleanEmail.split("@")[0] || "Cliente",
+              role: "customer",
+              status: "active",
+              created_at: row.created_at || new Date().toISOString(),
+              last_sign_in_at: null,
+              orders_count: 0,
+            });
+          }
         }
       }
     }
   } catch {
     // Ignora erro em caso de banco offline
   }
-  return counts;
+
+  for (const customer of orderCustomers.values()) {
+    const total = Math.max(
+      countsMap.get(customer.id) || 0,
+      countsMap.get(`email:${customer.email}`) || 0
+    );
+    customer.orders_count = total;
+  }
+
+  return { countsMap, orderCustomers };
+}
+
+/**
+ * Carrega contas sincronizadas a partir da tabela site_settings no Supabase.
+ */
+async function loadSyncedAccountsFromSupabase(): Promise<Map<string, ManagedUser>> {
+  const syncedMap = new Map<string, ManagedUser>();
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("site_settings")
+      .select("value")
+      .eq("key", "synced_accounts")
+      .maybeSingle();
+
+    if (data?.value && typeof data.value === "object") {
+      Object.values(data.value).forEach((item: any) => {
+        if (item && item.id && item.email) {
+          syncedMap.set(item.id, item as ManagedUser);
+        }
+      });
+    }
+  } catch {
+    // Falha silenciosa
+  }
+  return syncedMap;
 }
 
 /**
  * Lista e pesquisa contas de usuários e clientes.
- * Executada exclusivamente no servidor por administradores autorizados.
+ * Executada no servidor por administradores autorizados.
+ *
+ * Integração inteligente de múltiplas fontes:
+ * 1. Supabase Auth Admin API (listUsers direto via SUPABASE_SERVICE_ROLE_KEY)
+ * 2. site_settings (synced_accounts no Supabase)
+ * 3. Base de pedidos (orders)
+ * 4. Cache persistente em disco (synced-accounts.json)
+ * 5. Cache em memória resiliente
+ *
+ * Remove automaticamente contas fictícias de teste se houver qualquer usuário real registrado.
  */
 export async function listUsers(filter?: GetUsersFilter): Promise<GetUsersResponse> {
   const page = Math.max(1, filter?.page || 1);
   const perPage = Math.max(1, Math.min(100, filter?.perPage || 20));
-  const ordersCountMap = await getOrdersCountMap();
 
+  const { countsMap, orderCustomers } = await getOrdersAndCustomersData();
+  const combinedMap = new Map<string, ManagedUser>();
+
+  // 1. Supabase Auth Admin API (se SUPABASE_SERVICE_ROLE_KEY estiver disponível)
   const adminClient = getSupabaseAdminClient();
-  let allUsers: ManagedUser[] = [];
-
   if (adminClient) {
     try {
       const { data, error } = await adminClient.auth.admin.listUsers({
@@ -114,28 +298,28 @@ export async function listUsers(filter?: GetUsersFilter): Promise<GetUsersRespon
       });
 
       if (!error && data?.users) {
-        allUsers = data.users.map((u) => {
+        for (const u of data.users) {
           const isBannedByDuration = Boolean(
             u.banned_until && new Date(u.banned_until).getTime() > Date.now()
           );
           const isExplicitlyBlocked = Boolean(u.app_metadata?.is_blocked);
           const isBlocked = isBannedByDuration || isExplicitlyBlocked;
 
-          const email = u.email || "";
-          const emailOrderCount = ordersCountMap.get(`email:${email.toLowerCase()}`) || 0;
-          const userOrderCount = ordersCountMap.get(u.id) || 0;
+          const email = (u.email || "").toLowerCase().trim();
+          const emailOrderCount = countsMap.get(`email:${email}`) || 0;
+          const userOrderCount = countsMap.get(u.id) || 0;
           const totalOrders = Math.max(userOrderCount, emailOrderCount);
 
-          const role = u.app_metadata?.role === "admin" ? "admin" : "customer";
+          const role: UserRole = u.app_metadata?.role === "admin" ? "admin" : "customer";
 
-          return {
+          const managed: ManagedUser = {
             id: u.id,
             email,
             name:
               (u.user_metadata?.full_name as string) ||
               (u.user_metadata?.name as string) ||
               email.split("@")[0] ||
-              "Cliente",
+              (role === "admin" ? "Administrador" : "Cliente"),
             role,
             status: isBlocked ? "blocked" : "active",
             created_at: u.created_at,
@@ -144,29 +328,91 @@ export async function listUsers(filter?: GetUsersFilter): Promise<GetUsersRespon
             blocked_at: (u.app_metadata?.blocked_at as string) || null,
             blocked_reason: (u.app_metadata?.blocked_reason as string) || null,
           };
-        });
 
-        // Sincroniza usuários reais com o fallback em memória
-        allUsers.forEach((u) => memoryUsersFallback.set(u.id, u));
+          combinedMap.set(managed.id, managed);
+          memoryUsersFallback.set(managed.id, managed);
+        }
       }
     } catch {
-      // Falha ao conectar na API Admin do Supabase, utiliza o fallback em memória
+      // API Admin falhou ou não autorizada
     }
   }
 
-  // Se não obteve usuários do Supabase Admin (chave ausente ou indisponível), usa o fallback
-  if (allUsers.length === 0) {
-    allUsers = Array.from(memoryUsersFallback.values()).map((u) => ({
-      ...u,
-      orders_count:
-        ordersCountMap.get(u.id) ||
-        ordersCountMap.get(`email:${u.email.toLowerCase()}`) ||
-        u.orders_count ||
-        0,
-    }));
+  // 2. Contas sincronizadas na tabela site_settings do Supabase
+  const supabaseSynced = await loadSyncedAccountsFromSupabase();
+  for (const [id, user] of supabaseSynced.entries()) {
+    if (!combinedMap.has(id)) {
+      combinedMap.set(id, user);
+      memoryUsersFallback.set(id, user);
+    }
   }
 
-  // 1. Filtro por Busca (Nome, E-mail ou ID)
+  // 3. Clientes obtidos da tabela de pedidos (orders)
+  for (const customer of orderCustomers.values()) {
+    const existingById = combinedMap.get(customer.id);
+    const existingByEmail = Array.from(combinedMap.values()).find(
+      (u) => u.email.toLowerCase() === customer.email.toLowerCase()
+    );
+
+    if (!existingById && !existingByEmail) {
+      combinedMap.set(customer.id, customer);
+      memoryUsersFallback.set(customer.id, customer);
+    }
+  }
+
+  // 4. Cache persistente em disco local
+  const diskAccounts = readDiskCache();
+  for (const [id, user] of diskAccounts.entries()) {
+    if (!combinedMap.has(id)) {
+      combinedMap.set(id, user);
+      memoryUsersFallback.set(id, user);
+    }
+  }
+
+  // 5. Cache em memória
+  for (const [id, user] of memoryUsersFallback.entries()) {
+    if (!combinedMap.has(id)) {
+      combinedMap.set(id, user);
+    }
+  }
+
+  // Atualiza as contagens de pedidos mais recentes para todas as contas combinadas
+  for (const user of combinedMap.values()) {
+    const emailKey = `email:${user.email.toLowerCase()}`;
+    const ordersCount = Math.max(
+      countsMap.get(user.id) || 0,
+      countsMap.get(emailKey) || 0,
+      user.orders_count || 0
+    );
+    user.orders_count = ordersCount;
+  }
+
+  // 6. Separação de contas de demonstração vs contas reais:
+  const mockTestUserIds = new Set([
+    "usr-cliente-mariana",
+    "usr-cliente-carolina",
+    "usr-cliente-juliana",
+  ]);
+
+  const realAccounts = Array.from(combinedMap.values()).filter(
+    (u) =>
+      !mockTestUserIds.has(u.id) &&
+      !u.email.endsWith("@exemplo.com") &&
+      u.id !== "usr-admin-principal"
+  );
+
+  let allUsers: ManagedUser[];
+  if (realAccounts.length > 0) {
+    // Se existem contas ou logins reais registrados, remove as contas fictícias de teste
+    allUsers = Array.from(combinedMap.values()).filter(
+      (u) => !mockTestUserIds.has(u.id) && !u.email.endsWith("@exemplo.com")
+    );
+  } else {
+    // Se nenhuma conta real foi registrada ainda, mantém a demonstração
+    allUsers = Array.from(combinedMap.values());
+  }
+
+  // 7. Filtro por Busca (Nome, E-mail ou ID)
   let filtered = allUsers;
   if (filter?.search && filter.search.trim()) {
     const q = filter.search.toLowerCase().trim();
@@ -178,12 +424,12 @@ export async function listUsers(filter?: GetUsersFilter): Promise<GetUsersRespon
     );
   }
 
-  // 2. Filtro por Papel (Cliente ou Administrador)
+  // 8. Filtro por Papel (Cliente ou Administrador)
   if (filter?.role && filter.role !== "all") {
     filtered = filtered.filter((u) => u.role === filter.role);
   }
 
-  // 3. Filtro por Situação (Ativa ou Bloqueada)
+  // 9. Filtro por Situação (Ativa ou Bloqueada)
   if (filter?.status && filter.status !== "all") {
     filtered = filtered.filter((u) => u.status === filter.status);
   }
@@ -244,7 +490,8 @@ export async function getUserById(userId: string): Promise<ManagedUser | null> {
     }
   }
 
-  return memoryUsersFallback.get(userId) || null;
+  const list = await listUsers({ perPage: 1000 });
+  return list.users.find((u) => u.id === userId) || memoryUsersFallback.get(userId) || null;
 }
 
 /**
@@ -283,11 +530,24 @@ export async function setUserBlockedStatus(
   const now = new Date().toISOString();
   const cleanReason = reason?.trim() || (block ? "Bloqueado pelo administrador" : null);
 
+  const updated: ManagedUser = {
+    ...existingUser,
+    status: block ? "blocked" : "active",
+    blocked_at: block ? now : null,
+    blocked_reason: cleanReason,
+  };
+
+  memoryUsersFallback.set(targetUserId, updated);
+
+  const diskAccounts = readDiskCache();
+  diskAccounts.set(targetUserId, updated);
+  writeDiskCache(diskAccounts);
+
   const adminClient = getSupabaseAdminClient();
   if (adminClient) {
     try {
-      const { data, error } = await adminClient.auth.admin.updateUserById(targetUserId, {
-        ban_duration: block ? "876000h" : "none", // 100 anos para banir ou 'none' para desbanir
+      await adminClient.auth.admin.updateUserById(targetUserId, {
+        ban_duration: block ? "876000h" : "none",
         app_metadata: {
           role: "customer",
           is_blocked: block,
@@ -295,48 +555,40 @@ export async function setUserBlockedStatus(
           blocked_reason: cleanReason,
         },
       });
-
-      if (error) {
-        throw new Error(error.message || "Erro ao atualizar situação do usuário no Supabase.");
-      }
-
-      if (data?.user) {
-        const updated: ManagedUser = {
-          ...existingUser,
-          status: block ? "blocked" : "active",
-          blocked_at: block ? now : null,
-          blocked_reason: cleanReason,
-        };
-        memoryUsersFallback.set(targetUserId, updated);
-
-        return {
-          success: true,
-          user: updated,
-          message: block
-            ? `Conta de ${existingUser.name} bloqueada com sucesso.`
-            : `Conta de ${existingUser.name} reativada com sucesso.`,
-        };
-      }
     } catch (err) {
       if (err instanceof Error && err.message.startsWith("Operação negada")) {
         throw err;
       }
-      // Se a chamada ao Supabase falhar, atualiza o fallback em memória
     }
   }
 
-  // Atualização no fallback em memória
-  const updatedFallback: ManagedUser = {
-    ...existingUser,
-    status: block ? "blocked" : "active",
-    blocked_at: block ? now : null,
-    blocked_reason: cleanReason,
-  };
-  memoryUsersFallback.set(targetUserId, updatedFallback);
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("site_settings")
+      .select("value")
+      .eq("key", "synced_accounts")
+      .maybeSingle();
+
+    const currentMap: Record<string, ManagedUser> =
+      data && data.value && typeof data.value === "object"
+        ? (data.value as Record<string, ManagedUser>)
+        : {};
+
+    currentMap[targetUserId] = updated;
+
+    await supabase.from("site_settings").upsert({
+      key: "synced_accounts",
+      value: currentMap,
+      updated_at: now,
+    });
+  } catch {
+    // Falha silenciosa
+  }
 
   return {
     success: true,
-    user: updatedFallback,
+    user: updated,
     message: block
       ? `Conta de ${existingUser.name} bloqueada com sucesso.`
       : `Conta de ${existingUser.name} reativada com sucesso.`,
@@ -396,6 +648,10 @@ export async function createOrInviteAdmin(
           };
           memoryUsersFallback.set(newUser.id, newUser);
 
+          const disk = readDiskCache();
+          disk.set(newUser.id, newUser);
+          writeDiskCache(disk);
+
           return {
             success: true,
             user: newUser,
@@ -415,7 +671,6 @@ export async function createOrInviteAdmin(
         }
 
         if (data?.user) {
-          // Garante papel de admin no app_metadata do usuário convidado
           await adminClient.auth.admin.updateUserById(data.user.id, {
             app_metadata: { role: "admin" },
           });
@@ -432,6 +687,10 @@ export async function createOrInviteAdmin(
           };
           memoryUsersFallback.set(newUser.id, newUser);
 
+          const disk = readDiskCache();
+          disk.set(newUser.id, newUser);
+          writeDiskCache(disk);
+
           return {
             success: true,
             user: newUser,
@@ -447,7 +706,7 @@ export async function createOrInviteAdmin(
     }
   }
 
-  // Fallback em memória para ambientes de testes e desenvolvimento
+  // Fallback em memória e disco para ambientes de testes e desenvolvimento
   const fallbackId = `admin-${Date.now()}`;
   const newAdminFallback: ManagedUser = {
     id: fallbackId,
@@ -461,10 +720,37 @@ export async function createOrInviteAdmin(
   };
   memoryUsersFallback.set(fallbackId, newAdminFallback);
 
+  const disk = readDiskCache();
+  disk.set(fallbackId, newAdminFallback);
+  writeDiskCache(disk);
+
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("site_settings")
+      .select("value")
+      .eq("key", "synced_accounts")
+      .maybeSingle();
+
+    const currentMap: Record<string, ManagedUser> =
+      data && data.value && typeof data.value === "object"
+        ? (data.value as Record<string, ManagedUser>)
+        : {};
+
+    currentMap[fallbackId] = newAdminFallback;
+
+    await supabase.from("site_settings").upsert({
+      key: "synced_accounts",
+      value: currentMap,
+      updated_at: now,
+    });
+  } catch {
+    // Falha silenciosa
+  }
+
   return {
     success: true,
     user: newAdminFallback,
     message: `Administrador ${cleanName} (${cleanEmail}) registrado com sucesso.`,
   };
 }
-

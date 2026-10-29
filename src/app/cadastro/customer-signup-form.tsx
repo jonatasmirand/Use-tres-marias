@@ -120,12 +120,34 @@ export default function CustomerSignUpForm() {
         });
 
         if (signInError) {
+          fetch("/api/auth/sync", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: registerData.user?.id,
+              email: validation.data.email,
+              name: validation.data.name,
+              role: "customer",
+            }),
+          }).catch(() => {});
+
           setSuccessMessage("Conta criada com sucesso! Redirecionando para o login...");
           setTimeout(() => {
             window.location.href = `/login?next=${encodeURIComponent(nextUrl)}`;
           }, 1000);
           return;
         }
+
+        fetch("/api/auth/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: registerData.user?.id,
+            email: validation.data.email,
+            name: validation.data.name,
+            role: "customer",
+          }),
+        }).catch(() => {});
 
         setSuccessMessage("Conta criada com sucesso! Entrando...");
         window.location.href = nextUrl;
@@ -157,6 +179,21 @@ export default function CustomerSignUpForm() {
       if (error) {
         setErrorMessage(getSignUpErrorMessage(error.code, error.message));
         return;
+      }
+
+      if (data.user) {
+        fetch("/api/auth/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: data.user.id,
+            email: validation.data.email,
+            name: validation.data.name,
+            role: "customer",
+            created_at: data.user.created_at,
+            last_sign_in_at: new Date().toISOString(),
+          }),
+        }).catch(() => {});
       }
 
       if (data.user && !data.session) {

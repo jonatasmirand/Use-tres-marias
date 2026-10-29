@@ -3,7 +3,7 @@ import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getAdminSession } from "@/services/auth-service";
-import { listUsers } from "@/services/user-service";
+import { listUsers, syncAuthenticatedUser } from "@/services/user-service";
 import AccountsTableClient from "./accounts-table-client";
 import { UserRole, UserStatus } from "@/types/user";
 
@@ -30,6 +30,14 @@ export default async function AdminContasPage({ searchParams }: RouteContext) {
   if (!session) {
     redirect("/login");
   }
+
+  // Sincroniza a conta do administrador logado
+  await syncAuthenticatedUser({
+    id: session.id,
+    email: session.email,
+    role: "admin",
+    status: "active",
+  }).catch(() => {});
 
   const { busca, tipo, status, pagina } = await searchParams;
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCustomerOrders } from "@/services/order-service";
+import { syncAuthenticatedUser } from "@/services/user-service";
 import { ORDER_STATUS_MAP } from "@/types/order";
 
 export const instant = false;
@@ -28,6 +29,21 @@ export default async function CustomerAccountPage() {
   if (user.app_metadata?.role === "admin") {
     redirect("/admin");
   }
+
+  // Sincroniza a conta do cliente para atualização em tempo real no admin
+  await syncAuthenticatedUser({
+    id: user.id,
+    email: user.email || "",
+    name:
+      (user.user_metadata?.full_name as string) ||
+      (user.user_metadata?.name as string) ||
+      user.email?.split("@")[0] ||
+      "Cliente",
+    role: "customer",
+    status: user.app_metadata?.is_blocked ? "blocked" : "active",
+    created_at: user.created_at,
+    last_sign_in_at: user.last_sign_in_at || new Date().toISOString(),
+  }).catch(() => {});
 
   const orders = await getCustomerOrders(user.id);
   const recentOrders = orders.slice(0, 3);

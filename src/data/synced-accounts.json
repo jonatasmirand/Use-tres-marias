@@ -1,0 +1,26 @@
+[
+  {
+    "id": "6895233f-3412-4e83-a0af-0a678e4982a2",
+    "email": "admin@usetresmarias.com",
+    "name": "admin",
+    "role": "admin",
+    "status": "active",
+    "created_at": "2026-10-29T16:02:56.248Z",
+    "last_sign_in_at": "2026-10-29T17:42:16.795Z",
+    "orders_count": 0,
+    "blocked_at": null,
+    "blocked_reason": null
+  },
+  {
+    "id": "order-jonatasmiranda97.jm@gmail.com",
+    "name": "Jonatas",
+    "role": "customer",
+    "email": "jonatasmiranda97.jm@gmail.com",
+    "status": "active",
+    "blocked_at": null,
+    "created_at": "2026-10-28T17:21:01.998+00:00",
+    "orders_count": 5,
+    "blocked_reason": null,
+    "last_sign_in_at": null
+  }
+]

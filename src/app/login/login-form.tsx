@@ -116,6 +116,24 @@ export default function LoginForm() {
       const userRole = data.user.app_metadata?.role;
       const isAdmin = userRole === "admin";
 
+      // Sincronização automática para refletir no gerenciamento administrativo de contas
+      fetch("/api/auth/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: data.user.id,
+          email: data.user.email,
+          name:
+            (data.user.user_metadata?.full_name as string) ||
+            (data.user.user_metadata?.name as string) ||
+            data.user.email?.split("@")[0] ||
+            (isAdmin ? "Administrador" : "Cliente"),
+          role: isAdmin ? "admin" : "customer",
+          created_at: data.user.created_at,
+          last_sign_in_at: data.user.last_sign_in_at || new Date().toISOString(),
+        }),
+      }).catch(() => {});
+
       if (isAdmin) {
         setSuccessMessage("Acesso administrativo confirmado. Entrando no painel...");
         const destination = sanitizeRedirectUrl(nextUrl, "/admin", true);

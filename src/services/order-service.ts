@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { createClient } from "@/lib/supabase/server";
+import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   Order,
   OrderStatus,
@@ -29,6 +30,69 @@ export function generateOrderReference(): string {
   const year = new Date().getFullYear();
   const randomChars = crypto.randomBytes(3).toString("hex").toUpperCase();
   return `TM-${year}-${randomChars}`;
+}
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/** Valida se a string é um UUID válido para evitar erros de sintaxe no Postgres */
+export function isValidUuid(id?: string | null): boolean {
+  if (!id) return false;
+  return UUID_REGEX.test(id.trim());
+}
+
+/**
+ * Normaliza e protege valores de status de pedidos (suporta legados e variações sem descartar pedidos).
+ */
+export function normalizeOrderStatus(rawStatus?: string | null): OrderStatus {
+  if (!rawStatus) return "pending";
+  const clean = rawStatus.toLowerCase().trim();
+  if (clean === "pending" || clean === "pendente") return "pending";
+  if (
+    clean === "in_progress" ||
+    clean === "em_andamento" ||
+    clean === "processing" ||
+    clean === "em andamento"
+  ) {
+    return "in_progress";
+  }
+  if (
+    clean === "on_the_way" ||
+    clean === "a_caminho" ||
+    clean === "shipped" ||
+    clean === "em rota" ||
+    clean === "a caminho"
+  ) {
+    return "on_the_way";
+  }
+  if (
+    clean === "completed" ||
+    clean === "concluido" ||
+    clean === "concluído" ||
+    clean === "finalizado" ||
+    clean === "delivered" ||
+    clean === "entregue"
+  ) {
+    return "completed";
+  }
+  return "pending";
+}
+
+export interface GetAdminOrdersFilters {
+  status?: OrderStatus | "all";
+  completedOnly?: boolean;
+  activeOnly?: boolean;
+  search?: string;
+  clienteId?: string;
+  clienteEmail?: string;
+}
+
+export interface GetAdminOrdersResult {
+  orders: Order[];
+  total: number;
+  activeCount: number;
+  completedCount: number;
+  statusCounts: Record<OrderStatus, number>;
+  error?: string | null;
 }
 
 /**
@@ -304,16 +368,23 @@ export async function getPublicOrderTracking(identifier: string): Promise<Public
 }
 
 /**
- * Consulta administrativa de pedidos com filtros de status e busca.
+ * Consulta administrativa de pedidos com filtros de cliente, status e busca.
+ * Não utiliza contadores simulados: calcula e retorna as métricas reais do banco.
  */
-export async function getAdminOrders(filters?: {
-  status?: OrderStatus | "all";
-  completedOnly?: boolean;
-  activeOnly?: boolean;
-  search?: string;
-}): Promise<Order[]> {
+export async function getAdminOrders(
+  filters?: GetAdminOrdersFilters
+): Promise<GetAdminOrdersResult> {
+  const emptyCounts: Record<OrderStatus, number> = {
+    pending: 0,
+    in_progress: 0,
+    on_the_way: 0,
+    completed: 0,
+  };
+
   try {
-    const supabase = await createClient();
+    const adminClient = getSupabaseAdminClient();
+    const supabase = adminClient || (await createClient());
+
     let query = supabase
       .from("orders")
       .select(`
@@ -349,57 +420,145 @@ export async function getAdminOrders(filters?: {
       `)
       .order("created_at", { ascending: false });
 
-    if (filters?.status && filters.status !== "all") {
-      query = query.eq("status", filters.status);
-    } else if (filters?.activeOnly) {
-      query = query.neq("status", "completed");
-    } else if (filters?.completedOnly) {
-      query = query.eq("status", "completed");
+    // 1. Filtro por Cliente: relacionamento seguro por user_id (UUID) e/ou customer_email
+    const validUserId = isValidUuid(filters?.clienteId) ? filters!.clienteId!.trim() : null;
+    const cleanCustomerEmail = filters?.clienteEmail?.trim().toLowerCase();
+
+    if (validUserId && cleanCustomerEmail) {
+      query = query.or(`user_id.eq.${validUserId},customer_email.ilike.${cleanCustomerEmail}`);
+    } else if (validUserId) {
+      query = query.eq("user_id", validUserId);
+    } else if (cleanCustomerEmail) {
+      query = query.ilike("customer_email", cleanCustomerEmail);
     }
 
+    // 2. Filtro de Busca (Referência, Nome do Cliente, E-mail ou Telefone)
     if (filters?.search && filters.search.trim()) {
-      query = query.ilike("reference", `%${filters.search.trim()}%`);
+      const q = filters.search.trim();
+      query = query.or(
+        `reference.ilike.%${q}%,customer_name.ilike.%${q}%,customer_email.ilike.%${q}%,customer_phone.ilike.%${q}%`
+      );
     }
 
     const { data, error } = await query;
-    if (!error && Array.isArray(data)) {
-      return data.map((item) => ({
-        ...item,
-        items: item.order_items,
-      })) as unknown as Order[];
-    }
-  } catch {
-    // Fallback de memória caso tabela ainda não esteja no banco
-  }
 
-  // Fallback em memória
-  const allInMemory = Array.from(new Set(memoryOrdersFallback.values()));
-  return allInMemory.filter((order) => {
-    if (filters?.status && filters.status !== "all" && order.status !== filters.status) {
-      return false;
+    if (error) {
+      console.error("[OrderService] Erro ao consultar pedidos no Supabase:", error.message);
+      return {
+        orders: [],
+        total: 0,
+        activeCount: 0,
+        completedCount: 0,
+        statusCounts: emptyCounts,
+        error: "Não foi possível carregar os pedidos do banco de dados no momento.",
+      };
     }
-    if (filters?.activeOnly && order.status === "completed") {
-      return false;
+
+    let allOrders: Order[] = [];
+
+    if (Array.isArray(data)) {
+      allOrders = data.map((item) => {
+        const normalized = normalizeOrderStatus(item.status);
+        return {
+          ...item,
+          status: normalized,
+          items: Array.isArray(item.order_items) ? item.order_items : [],
+        } as unknown as Order;
+      });
     }
-    if (filters?.completedOnly && order.status !== "completed") {
-      return false;
+
+    // Fallback em memória para testes ou ambientes de desenvolvimento locais
+    if (allOrders.length === 0 && memoryOrdersFallback.size > 0) {
+      const allInMemory = Array.from(new Set(memoryOrdersFallback.values()));
+      allOrders = allInMemory.filter((order) => {
+        if (validUserId && order.user_id === validUserId) return true;
+        if (
+          cleanCustomerEmail &&
+          order.customer_email &&
+          order.customer_email.toLowerCase() === cleanCustomerEmail
+        ) {
+          return true;
+        }
+        if (validUserId || cleanCustomerEmail) return false;
+
+        if (filters?.search && filters.search.trim()) {
+          const q = filters.search.toLowerCase().trim();
+          const matchRef = order.reference.toLowerCase().includes(q);
+          const matchName = (order.customer_name || "").toLowerCase().includes(q);
+          const matchEmail = (order.customer_email || "").toLowerCase().includes(q);
+          const matchPhone = (order.customer_phone || "").includes(q);
+          if (!matchRef && !matchName && !matchEmail && !matchPhone) return false;
+        }
+        return true;
+      });
     }
-    if (
-      filters?.search &&
-      !order.reference.toLowerCase().includes(filters.search.toLowerCase())
-    ) {
-      return false;
+
+    // 3. Contadores determinísticos calculados com base no conjunto consultado
+    const total = allOrders.length;
+    let activeCount = 0;
+    let completedCount = 0;
+    const statusCounts: Record<OrderStatus, number> = {
+      pending: 0,
+      in_progress: 0,
+      on_the_way: 0,
+      completed: 0,
+    };
+
+    for (const o of allOrders) {
+      if (o.status === "completed") {
+        completedCount++;
+      } else {
+        activeCount++;
+      }
+      if (o.status in statusCounts) {
+        statusCounts[o.status]++;
+      } else {
+        statusCounts.pending++;
+      }
     }
-    return true;
-  });
+
+    // 4. Filtragem por status da aba atual
+    let filteredOrders = allOrders;
+    if (filters?.status && filters.status !== "all") {
+      filteredOrders = filteredOrders.filter((o) => o.status === filters.status);
+    } else if (filters?.activeOnly) {
+      filteredOrders = filteredOrders.filter((o) => o.status !== "completed");
+    } else if (filters?.completedOnly) {
+      filteredOrders = filteredOrders.filter((o) => o.status === "completed");
+    }
+
+    return {
+      orders: filteredOrders,
+      total,
+      activeCount,
+      completedCount,
+      statusCounts,
+      error: null,
+    };
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : "Erro interno ao processar pedidos.";
+    console.error("[OrderService] Exceção em getAdminOrders:", errorMsg);
+    return {
+      orders: [],
+      total: 0,
+      activeCount: 0,
+      completedCount: 0,
+      statusCounts: emptyCounts,
+      error: "Falha na comunicação com o banco de dados de pedidos.",
+    };
+  }
 }
 
 /**
  * Consulta um pedido específico por ID para a visualização administrativa.
  */
 export async function getAdminOrderById(orderId: string): Promise<Order | null> {
+  if (!orderId) return null;
+
   try {
-    const supabase = await createClient();
+    const adminClient = getSupabaseAdminClient();
+    const supabase = adminClient || (await createClient());
+
     const { data, error } = await supabase
       .from("orders")
       .select(`
@@ -439,11 +598,12 @@ export async function getAdminOrderById(orderId: string): Promise<Order | null> 
     if (!error && data) {
       return {
         ...data,
-        items: data.order_items,
+        status: normalizeOrderStatus(data.status),
+        items: Array.isArray(data.order_items) ? data.order_items : [],
       } as unknown as Order;
     }
-  } catch {
-    // Falha ou indisponibilidade
+  } catch (err) {
+    console.error("[OrderService] Erro ao carregar pedido por id:", err);
   }
 
   const memoryOrder = memoryOrdersFallback.get(orderId);
@@ -459,7 +619,8 @@ export async function updateOrderStatus(
   adminEmail: string,
   notes?: string
 ): Promise<Order> {
-  const validation = validateUpdateOrderStatusInput({ status: newStatus, notes });
+  const normalizedStatus = normalizeOrderStatus(newStatus);
+  const validation = validateUpdateOrderStatusInput({ status: normalizedStatus, notes });
   if (!validation.isValid) {
     throw new Error(validation.errors[0] || "Status de pedido inválido.");
   }
@@ -471,21 +632,23 @@ export async function updateOrderStatus(
 
   const now = new Date().toISOString();
   const newHistoryEntry: StatusHistoryEntry = {
-    status: newStatus,
+    status: normalizedStatus,
     changed_at: now,
     changed_by: adminEmail || "Administrador",
-    notes: notes?.trim() || `Status alterado para ${ORDER_STATUS_MAP[newStatus]?.label || newStatus}`,
+    notes: notes?.trim() || `Status alterado para ${ORDER_STATUS_MAP[normalizedStatus]?.label || normalizedStatus}`,
   };
 
   const updatedHistory = [...(existingOrder.status_history || []), newHistoryEntry];
-  const completedAt = newStatus === "completed" ? now : existingOrder.completed_at || null;
+  const completedAt = normalizedStatus === "completed" ? now : existingOrder.completed_at || null;
 
   try {
-    const supabase = await createClient();
+    const adminClient = getSupabaseAdminClient();
+    const supabase = adminClient || (await createClient());
+
     const { data, error } = await supabase
       .from("orders")
       .update({
-        status: newStatus,
+        status: normalizedStatus,
         status_history: updatedHistory,
         updated_at: now,
         completed_at: completedAt,
@@ -501,8 +664,10 @@ export async function updateOrderStatus(
         discount,
         total,
         customer_name,
+        customer_email,
         customer_phone,
         customer_notes,
+        user_id,
         status_history,
         created_at,
         updated_at,
@@ -522,20 +687,33 @@ export async function updateOrderStatus(
       `)
       .single();
 
-    if (!error && data) {
-      return {
-        ...data,
-        items: data.order_items,
-      } as unknown as Order;
+    if (error) {
+      console.error("[OrderService] Erro ao atualizar status no banco:", error.message);
+      throw new Error(`Erro ao atualizar status no banco: ${error.message}`);
     }
-  } catch {
-    // Fallback de memória
+
+    if (data) {
+      const updatedOrder = {
+        ...data,
+        status: normalizeOrderStatus(data.status),
+        items: Array.isArray(data.order_items) ? data.order_items : [],
+      } as unknown as Order;
+
+      memoryOrdersFallback.set(existingOrder.token_hash, updatedOrder);
+      memoryOrdersFallback.set(orderId, updatedOrder);
+      return updatedOrder;
+    }
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith("Erro ao atualizar")) {
+      throw err;
+    }
+    console.error("[OrderService] Exceção em updateOrderStatus:", err);
   }
 
   // Atualiza no fallback
   const updatedFallback: Order = {
     ...existingOrder,
-    status: newStatus,
+    status: normalizedStatus,
     status_history: updatedHistory,
     updated_at: now,
     completed_at: completedAt,

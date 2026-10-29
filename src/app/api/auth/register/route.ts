@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
+import { syncAuthenticatedUser } from "@/services/user-service";
 import { customerSignUpSchema } from "@/validations/customer-auth-schemas";
 
 /**
@@ -70,6 +71,17 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    // Sincroniza imediatamente o novo cliente no gerenciamento de contas
+    await syncAuthenticatedUser({
+      id: data.user.id,
+      email: data.user.email || email,
+      name: name,
+      role: "customer",
+      status: "active",
+      created_at: data.user.created_at,
+      last_sign_in_at: null,
+    });
 
     return NextResponse.json(
       {
